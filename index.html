@@ -69,6 +69,10 @@ button:hover,label.b:hover{border-color:var(--ac)}
 @media (max-width:700px){#panel{bottom:auto;right:0;width:auto;max-height:62vh;border-right:0;border-bottom:1px solid #3d424d;border-radius:0 0 16px 16px}}
 #panel textarea{width:100%;box-sizing:border-box;border-radius:8px}
 </style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 <div id="stage">
@@ -1152,6 +1156,9 @@ try{const j=JSON.parse(localStorage.getItem('pm_s'));if(Array.isArray(j)&&j.leng
 pick(0);
 hist=[snap()];hi=0;updU();
 autoLoad();
+</script>
+<script>
+try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 </script>
 </body>
 </html>
