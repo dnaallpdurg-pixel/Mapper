@@ -10,7 +10,7 @@ html,body{height:100%;margin:0;background:#000;color:var(--tx);font:14px system-
 #stage{position:fixed;inset:0;overflow:hidden;background:#000}
 #layers{position:absolute;inset:0;transition:opacity .4s}
 .L{position:absolute;left:0;top:0;transform-origin:50% 50%;background:#000}
-.W{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:#000}
+.W{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:#000;will-change:transform}
 #svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .h{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:3px solid var(--ac);background:rgba(77,163,255,.25);touch-action:none;z-index:5;cursor:grab}
 #bar{display:flex;flex-direction:column;gap:6px;margin-top:6px}
@@ -55,7 +55,7 @@ button:hover,label.b:hover{border-color:var(--ac)}
 #sk canvas{max-width:100%;max-height:58vh;align-self:center;touch-action:none;background:#000;border:1px solid #3d424d}
 #sk .ln{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 #sk .aah{font-weight:600}
-#panel{display:none;flex-direction:column;overflow:hidden;padding:calc(8px + env(safe-area-inset-top,0px)) 0 0;backdrop-filter:blur(10px);background:rgba(22,24,30,.96)}
+#panel{display:none;flex-direction:column;overflow:hidden;padding:calc(8px + env(safe-area-inset-top,0px)) 0 0;background:#16181e}
 #panel.open{display:flex}
 #panel .ph{position:static;padding:0 12px 6px;margin:0}
 #tabs{display:flex;gap:2px;padding:0 6px 6px;border-bottom:1px solid #2d313a}
@@ -163,6 +163,9 @@ button:hover,label.b:hover{border-color:var(--ac)}
 
 <script>
 const $=s=>document.querySelector(s);
+let RS=(()=>{try{const v=+localStorage.getItem('pm_rs');if(v)return v}catch(e){}return matchMedia('(pointer:coarse)').matches?.5:1})();
+const QW=()=>Math.round(1280*RS),QH=()=>Math.round(720*RS);
+function LC(s){const c=s.cv.getContext('2d'),k=s.cv.width/1280;c.setTransform(k,0,0,k,0,0);return c}
 const stage=$('#stage'),layers=$('#layers'),svg=$('#svg'),bar=$('#bar'),help=$('#help'),chips=$('#chips');
 const NS='http://www.w3.org/2000/svg';
 let S=[],act=0,outMode=false;
@@ -219,7 +222,7 @@ const hs=[0,1,2,3].map(i=>{
 
 function add(p){
   const i=S.length;
-  const cv=document.createElement('canvas');cv.width=1280;cv.height=720;cv.className='L';
+  const cv=document.createElement('canvas');cv.width=QW();cv.height=QH();cv.className='L';
   const vd=document.createElement('video');vd.loop=true;vd.playsInline=true;vd.className='L';
   const wr=document.createElement('div');wr.className='W';const fd=document.createElement('div');fd.style.cssText='position:absolute;inset:0;pointer-events:none';wr.append(cv,vd,fd);layers.append(wr);
   const pg=document.createElementNS(NS,'polygon');
@@ -270,7 +273,7 @@ function apply(){
 
 // animated test pattern
 function draw(s,i,t){
-  const c=s.cv.getContext('2d'),w=s.cv.width,h=s.cv.height,hue=(i*70+200)%360;
+  const c=LC(s),w=1280,h=720,hue=(i*70+200)%360;
   if(s.shape&&s.shape.on){const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'hsl('+((t/15)%360)+',90%,55%)');g.addColorStop(1,'hsl('+((t/15+120)%360)+',90%,55%)');c.fillStyle=g}else c.fillStyle='#111';
   c.fillRect(0,0,w,h);
   c.strokeStyle='hsl('+hue+',80%,60%)';c.lineWidth=2;
@@ -280,7 +283,8 @@ function draw(s,i,t){
   c.fillStyle='hsl('+(t/20%360)+',90%,60%)';c.fillRect((t/4%(w+200))-200,h-120,200,50);
   c.fillStyle='#fff';c.font='bold 220px system-ui';c.textAlign='center';c.fillText('S'+(i+1),w/2,h/2+70);
 }
-(function loop(t){S.forEach((s,i)=>{if(s.src===s.cv){if(s.txt)drawT(s,t);else if(s.des)D[s.des][1](s.cv.getContext('2d'),s.cv.width,s.cv.height,t,s);else if(s.sl)drawSl(s);else if(s.test)draw(s,i,t)}});updShape();fxTick();seqTick(performance.now());camTick();requestAnimationFrame(loop)})(0);
+var LT=0,DI=16;
+(function loop(t){if(t-LT>=DI){LT=t;S.forEach((s,i)=>{if(s.src===s.cv&&!(s.fx&&s.fx.phase==='hidden')){if(s.txt)drawT(s,t);else if(s.des)D[s.des][1](LC(s),1280,720,t,s);else if(s.sl)drawSl(s);else if(s.test)draw(s,i,t)}})}updShape();fxTick();seqTick(performance.now());camTick();requestAnimationFrame(loop)})(0);
 
 // file load (applies to the active surface)
 $('#file').onchange=e=>{
@@ -300,7 +304,7 @@ $('#file').onchange=e=>{
   e.target.value='';
 };
 $('#play').onclick=()=>{const s=S[act];if(s.src===s.vd)s.vd.paused?s.vd.play():s.vd.pause()};
-$('#tp').onclick=()=>{const s=S[act];s.cv.width=1280;s.cv.height=720;s.test=true;s.txt=s.des=s.sl=null;s.vd.pause();s.src=s.cv;apply()};
+$('#tp').onclick=()=>{const s=S[act];s.cv.width=QW();s.cv.height=QH();s.test=true;s.txt=s.des=s.sl=null;s.vd.pause();s.src=s.cv;apply()};
 $('#undo').onclick=()=>go(-1);
 $('#redo').onclick=()=>go(1);
 $('#reset').onclick=()=>{S[act].pts=q(act);apply();commit()};
@@ -360,7 +364,7 @@ function renderPanel(){
 const T=()=>S[act].txt;
 function useText(){
   const s=S[act];if(!s.txt)s.txt=defTxt();s.des=null;
-  s.cv.width=1280;s.cv.height=720;s.vd.pause();s.src=s.cv;s.test=false;
+  s.cv.width=QW();s.cv.height=QH();s.vd.pause();s.src=s.cv;s.test=false;
   renderPanel();apply();
 }
 $('#pb').onclick=()=>panel.classList.toggle('open');
@@ -594,7 +598,8 @@ function fxTick(){
     if(f.inv)c.push(`invert(${f.inv}%)`);
     if(f.gray)c.push(`grayscale(${f.gray}%)`);
     const st=s.src.style;
-    st.transform=R.tf.join(' ');st.opacity=R.op;st.filter=c.concat(R.fl).join(' ');st.clipPath=R.cp;
+    const kk=R.tf.join(' ')+'|'+R.op+'|'+c.concat(R.fl).join(' ')+'|'+R.cp;
+    if(s._k!==kk||s._e!==s.src){s._k=kk;s._e=s.src;st.transform=R.tf.join(' ');st.opacity=R.op;st.filter=c.concat(R.fl).join(' ');st.clipPath=R.cp}
   });
 }
 const opts=(o,none)=>(none?"<option value='none'>Koi nahi</option>":'')+Object.entries(o).map(([k,v])=>`<option value='${k}'>${v[0]}</option>`).join('');
@@ -701,7 +706,7 @@ $('#bt').after(preDiv);
 preDiv.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   const s=S[act];
-  s.cv.width=1280;s.cv.height=720;s.vd.pause();s.src=s.cv;s.test=false;
+  s.cv.width=QW();s.cv.height=QH();s.vd.pause();s.src=s.cv;s.test=false;
   if(b.dataset.d){s.des=b.dataset.d;s.txt=null;s.ds=null}
   else{
     const t=TPL[+b.dataset.t][1];s.des=null;
@@ -717,7 +722,7 @@ D.silk=['🟥 Silk cloth',(c,w,h,t)=>{const g=c.createLinearGradient(0,0,w,0);fo
 $('#pdd').insertAdjacentHTML('beforeend',`<button data-d='gold'>${D.gold[0]}</button><button data-d='silk'>${D.silk[0]}</button>`);
 
 function drawSl(s){
-  const c=s.cv.getContext('2d'),w=s.cv.width,h=s.cv.height,L=s.sl,now=performance.now();
+  const c=LC(s),w=1280,h=720,L=s.sl,now=performance.now();
   if(now-L.t0>=L.every*1000){L.prev=L.i;L.i=(L.i+1)%L.imgs.length;L.t0=now}
   const cover=(im,a)=>{if(!im.naturalWidth)return;const k=Math.max(w/im.naturalWidth,h/im.naturalHeight),iw=im.naturalWidth*k,ih=im.naturalHeight*k;c.globalAlpha=a;c.drawImage(im,(w-iw)/2,(h-ih)/2,iw,ih)};
   c.fillStyle='#000';c.fillRect(0,0,w,h);
@@ -733,7 +738,7 @@ $('#slf').onchange=e=>{
   const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
   const s=S[act];
   s.sl={imgs:fs.map(f=>{const im=new Image();im.src=URL.createObjectURL(f);return im}),i:0,prev:null,t0:performance.now(),every:+$('#sle').value||3};
-  s.txt=s.des=null;s.test=false;s.cv.width=1280;s.cv.height=720;s.vd.pause();s.src=s.cv;apply();
+  s.txt=s.des=null;s.test=false;s.cv.width=QW();s.cv.height=QH();s.vd.pause();s.src=s.cv;apply();
 };
 $('#sle').oninput=e=>{const s=S[act];if(s.sl)s.sl.every=Math.max(.5,+e.target.value||3)};
 slDiv.addEventListener('click',e=>{
@@ -871,7 +876,7 @@ $('#dadd').onclick=()=>add();$('#dun').onclick=()=>go(-1);$('#drd').onclick=()=>
 const inQ=(p,x,y)=>{let c=false;for(let i=0,j=3;i<4;j=i++)if((p[i][1]>y)!==(p[j][1]>y)&&x<(p[j][0]-p[i][0])*(y-p[i][1])/(p[j][1]-p[i][1])+p[i][0])c=!c;return c};
 let mv=null,fp=false;
 function toSrc(s,x,y){
-  const W=stage.clientWidth,H=stage.clientHeight,w=s.cv.width,h=s.cv.height,P=[[0,0],[w,0],[w,h],[0,h]],A=[],B=[];
+  const W=stage.clientWidth,H=stage.clientHeight,w=1280,h=720,P=[[0,0],[w,0],[w,h],[0,h]],A=[],B=[];
   s.pts.forEach((q,i)=>{const X=q[0]*W,Y=q[1]*H,[u,v]=P[i];A.push([X,Y,1,0,0,0,-u*X,-u*Y]);B.push(u);A.push([0,0,0,X,Y,1,-v*X,-v*Y]);B.push(v)});
   const [a,b,c,d,e,f,g,k]=solve(A,B),px=x*W,py=y*H,z=g*px+k*py+1;
   return[(a*px+b*py+c)/z,(d*px+e*py+f)/z];
@@ -994,7 +999,7 @@ $('#prnw').onclick=()=>loadP({});
 $('#prx').onclick=()=>{try{navigator.clipboard.writeText(JSON.stringify(ser())).then(()=>toast('Project copy ho gaya'))}catch(e){toast('Copy nahi hua')}};
 $('#pri').onclick=()=>{const t=prompt('Project text paste karo');if(t){try{loadP(JSON.parse(t))}catch(e){toast('Galat text')}}};
 let lastA='';
-setInterval(()=>{try{const j=JSON.stringify(ser());if(j!==lastA){lastA=j;localStorage.setItem('pm_auto',j);S.forEach((s,i)=>{if(s.fb&&s.fsv!==s.fb){s.fsv=s.fb;idbSet('auto:'+i,s.fb)}})}}catch(e){}},2000);
+setInterval(()=>{try{const j=JSON.stringify(ser());if(j!==lastA){lastA=j;localStorage.setItem('pm_auto',j);S.forEach((s,i)=>{if(s.fb&&s.fsv!==s.fb){s.fsv=s.fb;idbSet('auto:'+i,s.fb)}})}}catch(e){}},5000);
 function autoLoad(){try{const j=localStorage.getItem('pm_auto');if(j)loadP(JSON.parse(j),'auto:')}catch(e){}hist=[snap()];hi=0;updU();if($('#aus').checked)setTimeout(seqGo,800)}
 
 // ===== particles + 3D effects (9), text styles (10), soft edge, beat, files, auto-start, record =====
@@ -1055,7 +1060,7 @@ $('#ptxt').insertAdjacentHTML('afterbegin',`<div class='ln'>Font <select id='tff
 $('#tff').onchange=e=>{const f=FONTS[+e.target.value][0];T().ff=f;if(f)document.fonts.load(`bold 40px ${f}`,'अAa').catch(()=>{})};
 $('#tef').onchange=e=>{T().eff=e.target.value;T().t0=0};
 function drawT(s,t){
-  const x=s.txt,c=s.cv.getContext('2d'),w=s.cv.width,h=s.cv.height,now=performance.now(),e=x.eff||'none';
+  const x=s.txt,c=LC(s),w=1280,h=720,now=performance.now(),e=x.eff||'none';
   const V={num:()=>nval(x.n),time:()=>new Date().toLocaleTimeString(),date:()=>new Date().toLocaleDateString(),count:()=>{const k=Math.ceil(cval(x.cd));return p2(Math.floor(k/60))+':'+p2(k%60)},watch:()=>{const m=swms(x.sw);return p2(Math.floor(m/60000))+':'+p2(Math.floor(m/1000)%60)+'.'+Math.floor(m%1000/100)}};
   let str=x.text.replace(/\{(num|time|date|count|watch)\}/g,(_,k)=>V[k]());
   if(e==='type'){if(!x.t0)x.t0=now;str=str.slice(0,Math.floor((now-x.t0)/120)%(str.length+10))}
@@ -1149,6 +1154,13 @@ stage.addEventListener('pointermove',e=>{
   const r=stage.getBoundingClientRect();CAM={fake:true};
   CP.x+=((e.clientX-r.left)/r.width-CP.x)*.4;CP.y+=((e.clientY-r.top)/r.height-CP.y)*.4;CP.m=.6;
 });
+
+// ---- performance: quality / frame rate ----
+pj.insertAdjacentHTML('beforeend',`<div class='sec'>⚡ Performance (app hang ho to Light chuno)</div><div class='ln'>Quality <select id='qsel'><option value='1'>Best (1280)</option><option value='0.5'>Balanced (640)</option><option value='0.35'>Light (450)</option></select></div>`);
+const diFor=r=>r>=1?16:r>=.5?33:66;
+function fitRes(){S.forEach(s=>{if(s.txt||s.des||s.sl||s.test){s.cv.width=QW();s.cv.height=QH();s.ds=null}});apply()}
+$('#qsel').value=RS>=1?'1':RS>=.5?'0.5':'0.35';DI=diFor(RS);
+$('#qsel').onchange=e=>{RS=+e.target.value;DI=diFor(RS);try{localStorage.setItem('pm_rs',String(RS))}catch(x){}fitRes();toast('Quality badal gayi')};
 
 let init=null;
 try{const j=JSON.parse(localStorage.getItem('pm_s'));if(Array.isArray(j)&&j.length&&j.every(p=>Array.isArray(p)&&p.length===4))init=j}catch(e){}
