@@ -9,8 +9,8 @@
 html,body{height:100%;margin:0;background:#000;color:var(--tx);font:14px system-ui,sans-serif;overflow:hidden}
 #stage{position:fixed;inset:0;overflow:hidden;background:#000}
 #layers{position:absolute;inset:0;transition:opacity .4s}
-.L{position:absolute;left:0;top:0;transform-origin:50% 50%;background:#000}
-.W{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:#000;will-change:transform}
+.L{position:absolute;left:0;top:0;transform-origin:50% 50%;background:transparent}
+.W{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:transparent;will-change:transform}
 #svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .h{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:3px solid var(--ac);background:rgba(77,163,255,.25);touch-action:none;z-index:5;cursor:grab}
 #bar{display:flex;flex-direction:column;gap:6px;margin-top:6px}
@@ -65,6 +65,7 @@ button:hover,label.b:hover{border-color:var(--ac)}
 .tab{display:none;padding:8px 12px 14px}
 .tab.on{display:block;overflow:auto;flex:1;min-height:0}
 #dock{flex-wrap:wrap;max-width:calc(100vw - 20px)}
+.pp{border-color:#ffd54a;background:rgba(255,213,74,.25);width:30px;height:30px;margin:-15px 0 0 -15px;z-index:6}
 #panel .ln input[type=range]{flex:1;min-width:120px}
 @media (max-width:700px){#panel{bottom:auto;right:0;width:auto;max-height:62vh;border-right:0;border-bottom:1px solid #3d424d;border-radius:0 0 16px 16px}}
 #panel textarea{width:100%;box-sizing:border-box;border-radius:8px}
@@ -84,7 +85,7 @@ button:hover,label.b:hover{border-color:var(--ac)}
 
 <div id="bar">
   <div id="chips"></div>
-  <label class="b">📂 Video/Image<input id="file" type="file" accept="video/*,image/*" hidden></label>
+  <label class="b">📂 Video/Image<input id="file" type="file" accept="video/*,image/*" multiple hidden></label>
   <button id="play">⏯ Play</button>
   <button id="tp">▦ Test</button>
   <button id="del">🗑 Surface hatao</button>
@@ -118,7 +119,7 @@ button:hover,label.b:hover{border-color:var(--ac)}
   <button class="row" id="aax">🧹 Silhouette hatao</button>
   <div class="sec" id="psec">Screens (S1, S2...)</div>
   <div class="sec">Is screen ka content</div>
-  <label class="b row">📂 Video / Image<input id="file2" type="file" accept="video/*,image/*" hidden></label>
+  <label class="b row">📂 Video / Image<input id="file2" type="file" accept="video/*,image/*" multiple hidden></label>
   <button class="row" id="bte">▦ Test pattern</button>
   <button class="row" id="bt">🔤 Word / Number screen</button>
   <div class="sec">Screen ka shape</div>
@@ -224,15 +225,15 @@ function add(p){
   const i=S.length;
   const cv=document.createElement('canvas');cv.width=QW();cv.height=QH();cv.className='L';
   const vd=document.createElement('video');vd.loop=true;vd.playsInline=true;vd.className='L';
-  const wr=document.createElement('div');wr.className='W';const fd=document.createElement('div');fd.style.cssText='position:absolute;inset:0;pointer-events:none';wr.append(cv,vd,fd);layers.append(wr);
+  const wr=document.createElement('div');wr.className='W';const fd=document.createElement('div');fd.style.cssText='position:absolute;inset:0;pointer-events:none';const im=document.createElement('img');im.className='L';im.style.display='none';im.draggable=false;wr.append(cv,vd,im,fd);layers.append(wr);
   const pg=document.createElementNS(NS,'polygon');
   pg.setAttribute('fill','none');pg.setAttribute('stroke-width','2');pg.setAttribute('stroke-dasharray','6 4');
   svg.appendChild(pg);
-  S.push({id:++uid,pts:p||q(i),cv,vd,wr,fd,src:cv,test:true,pg,fx:defFx()});
+  S.push({id:++uid,pts:p||q(i),cv,vd,im,wr,fd,src:cv,test:true,pg,fx:defFx()});
   pick(S.length-1);commit();
 }
 function pick(i){act=i;chips.innerHTML='';
-  S.forEach((_,k)=>{const b=document.createElement('button');b.textContent=S[k].name||'S'+(k+1);b.className=k===act?'on':'';b.onclick=()=>pick(k);chips.appendChild(b)});
+  S.forEach((_,k)=>{const b=document.createElement('button');b.textContent=S[k].name||'S'+(k+1);b.className=(k===act?'on ':'')+((SEL&&SEL.has(S[k].id))?'ms':'');b.onclick=()=>{if(selMode){const id=S[k].id;if(SEL.has(id))SEL.delete(id);else SEL.add(id)}else SEL.clear();pick(k)};chips.appendChild(b)});
   const a=document.createElement('button');a.textContent='＋';a.onclick=()=>add();chips.appendChild(a);
   apply();renderPanel();renderFx();renderSeq();
 }
@@ -251,12 +252,12 @@ function solve(A,b){const n=8;
 function apply(){
   const W=stage.clientWidth,H=stage.clientHeight;
   S.forEach((s,k)=>{
-    s.cv.style.display=s.src===s.cv?'block':'none';
+    s.cv.style.display=s.src===s.cv?'block':'none';s.im.style.display=s.src===s.im?'block':'none';
     s.vd.style.display=s.src===s.vd?'block':'none';
     const w=s.src.videoWidth||s.src.width,h=s.src.videoHeight||s.src.height;
     const D=s.pts.map(p=>[p[0]*W,p[1]*H]);
     s.pg.setAttribute('points',D.map(p=>p.join(',')).join(' '));
-    s.pg.setAttribute('stroke',k===act?'#4da3ff':'rgba(255,255,255,.35)');
+    s.pg.setAttribute('stroke',k===act?'#4da3ff':(SEL&&SEL.has(s.id))?'#2ee6a6':'rgba(255,255,255,.35)');s.pg.setAttribute('stroke-width',(SEL&&SEL.has(s.id))?3:2);
     if(k===act)hs.forEach((el,i)=>{el.style.left=D[i][0]+'px';el.style.top=D[i][1]+'px'});
     if(!w||!h)return;
     const P=[[0,0],[w,0],[w,h],[0,h]],A=[],B=[];
@@ -284,17 +285,26 @@ function draw(s,i,t){
   c.fillStyle='#fff';c.font='bold 220px system-ui';c.textAlign='center';c.fillText('S'+(i+1),w/2,h/2+70);
 }
 var LT=0,DI=16;
-(function loop(t){if(t-LT>=DI){LT=t;S.forEach((s,i)=>{if(s.src===s.cv&&!(s.fx&&s.fx.phase==='hidden')){if(s.txt)drawT(s,t);else if(s.des)D[s.des][1](LC(s),1280,720,t,s);else if(s.sl)drawSl(s);else if(s.test)draw(s,i,t)}})}updShape();fxTick();seqTick(performance.now());camTick();requestAnimationFrame(loop)})(0);
+(function loop(t){if(t-LT>=DI){LT=t;S.forEach((s,i)=>{if(s.src===s.cv&&!(s.fx&&s.fx.phase==='hidden')){if(s.txt)drawT(s,t);else if(s.des)(TRANSP=!!s.bl,D[s.des][1](LC(s),1280,720,t,s));else if(s.sl)drawSl(s);else if(s.test)draw(s,i,t)}})}updShape();fxTick();seqTick(performance.now());camTick();expTick();polyTick();requestAnimationFrame(loop)})(0);
 
 // file load (applies to the active surface)
 $('#file').onchange=e=>{
-  const f=e.target.files[0];if(!f)return;
+  const fl=[...e.target.files],f=fl[0];if(!f)return;
+  const isV=x=>x.type.startsWith('video/')||/\.(mp4|webm|mov|mkv|m4v|avi|3gp|ogv)$/i.test(x.name);
   const s=S[act],url=URL.createObjectURL(f);s.fb=f;
+  s.pl=null;s.vd.loop=true;s.vd.onended=null;
+  if(fl.length>1&&fl.every(isV)){s.pl=fl.map(x=>URL.createObjectURL(x));s.pi=0;s.vd.loop=false;s.vd.onended=()=>{s.pi=(s.pi+1)%s.pl.length;s.vd.src=s.pl[s.pi];s.vd.play().catch(()=>{})};toast(fl.length+' videos ek ke baad ek chalenge')}
+  else if(fl.length>1)toast('Kai photos ke liye Slideshow use karo, abhi pehli file li');
   if(f.type.startsWith('video/')||/\.(mp4|webm|mov|mkv|m4v|avi|3gp|ogv)$/i.test(f.name)){
     s.vd.muted=true;s.vd.preload='auto';
     s.vd.onerror=()=>toast('Ye video is browser me nahi chal raha. MP4 (H.264) ya WebM use karo.');
     s.vd.src=url;
     s.vd.onloadedmetadata=()=>{s.src=s.vd;s.test=false;s.txt=s.des=s.sl=null;apply();s.vd.play().catch(()=>{s.needTap=true;toast('Video ruka hai: screen par ek baar tap karo')})};
+  }else if(f.type==='image/gif'||/\.gif$/i.test(f.name)){
+    s.vd.pause();
+    s.im.onload=()=>{s.im.width=s.im.naturalWidth;s.im.height=s.im.naturalHeight;s.src=s.im;s.test=false;s.txt=s.des=s.sl=null;apply()};
+    s.im.onerror=()=>toast('GIF khul nahi payi');
+    s.im.src=url;
   }else{
     const img=new Image();
     img.onload=()=>{s.cv.width=img.naturalWidth;s.cv.height=img.naturalHeight;s.cv.getContext('2d').drawImage(img,0,0);s.test=false;s.txt=s.des=s.sl=null;s.vd.pause();s.src=s.cv;apply()};
@@ -418,18 +428,18 @@ function updShape(){
     }
     const w=s.src.videoWidth||s.src.width,h=s.src.videoHeight||s.src.height;
     if(!w||!h)return;
-    const str=(sh.kind&&sh.kind!=='text')?'#'+sh.kind:sh.text.replaceAll('{time}',new Date().toLocaleTimeString()).replaceAll('{date}',new Date().toLocaleDateString());
-    const k=str+'|'+w+'x'+h;
+    const str=(sh.kind&&sh.kind!=='text')?'#'+sh.kind+(sh.kind==='poly'?JSON.stringify(sh.pts):''):sh.text.replaceAll('{time}',new Date().toLocaleTimeString()).replaceAll('{date}',new Date().toLocaleDateString());
+    const k=str+'|'+w+'x'+h+(s._pd?'d':'');
     if(k===s.sk)return;
     s.sk=k;
-    const r=Math.min(1,1280/w),mw=Math.round(w*r),mh=Math.round(h*r);
+    const r=Math.min(1,(s._pd?400:1280)/w),mw=Math.round(w*r),mh=Math.round(h*r);
     const m=document.createElement('canvas');m.width=mw;m.height=mh;
     const c=m.getContext('2d'),L=str.split('\n');
     c.font='bold 100px system-ui,sans-serif';
     const tw=Math.max(...L.map(l=>c.measureText(l).width),1);
     const z=100*Math.min(mw*.96/tw,mh*.96/(L.length*115));
     c.font='bold '+z+'px system-ui,sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#fff';
-    if(sh.kind&&sh.kind!=='text'){c.clearRect(0,0,mw,mh);c.fillStyle='#fff';SHP[sh.kind][1](c,mw,mh)}else L.forEach((l,i)=>c.fillText(l,mw/2,mh/2+(i-(L.length-1)/2)*z*1.15));
+    if(sh.kind&&sh.kind!=='text'){c.clearRect(0,0,mw,mh);c.fillStyle='#fff';(sh.kind==='poly'?polyDraw(c,mw,mh,sh.pts):SHP[sh.kind][1](c,mw,mh))}else L.forEach((l,i)=>c.fillText(l,mw/2,mh/2+(i-(L.length-1)/2)*z*1.15));
     const u='url('+m.toDataURL()+')';
     [s.wr].forEach(e=>{
       e.style.webkitMaskImage=u;e.style.maskImage=u;
@@ -598,6 +608,7 @@ function fxTick(){
     if(f.inv)c.push(`invert(${f.inv}%)`);
     if(f.gray)c.push(`grayscale(${f.gray}%)`);
     const st=s.src.style;
+    s._R={tf:R.tf.join(' '),op:R.op,fl:c.concat(R.fl).join(' '),cp:R.cp};
     const kk=R.tf.join(' ')+'|'+R.op+'|'+c.concat(R.fl).join(' ')+'|'+R.cp;
     if(s._k!==kk||s._e!==s.src){s._k=kk;s._e=s.src;st.transform=R.tf.join(' ');st.opacity=R.op;st.filter=c.concat(R.fl).join(' ');st.clipPath=R.cp}
   });
@@ -883,20 +894,24 @@ function toSrc(s,x,y){
 }
 function flowAt(s,x,y){(s.fe||(s.fe=[])).push(toSrc(s,x,y));s.ft=performance.now()}
 stage.addEventListener('pointerdown',e=>{
-  if(outMode||e.target.classList.contains('h'))return;
+  if(outMode||(typeof EDP!=='undefined'&&EDP.on)||e.target.classList.contains('h'))return;
   const r=stage.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
   let k=-1;for(let i=S.length-1;i>=0;i--)if(inQ(S[i].pts,x,y)){k=i;break}
-  if(k<0)return;if(k!==act)pick(k);
+  if(k<0){if(!e.shiftKey&&!e.ctrlKey&&!selMode&&SEL.size){SEL.clear();pick(act)}return}
+  const idk=S[k].id,was=SEL.has(idk),multi=e.shiftKey||e.ctrlKey||selMode;
+  if(multi){if(!SEL.size&&S[act]&&S[act].id!==idk)SEL.add(S[act].id);SEL.add(idk)}else if(!was)SEL.clear();
+  pick(k);
   const s=S[k];
   if(s.des==='flow'){fp=true;flowAt(s,x,y);return}
-  mv={x,y,p:s.pts.map(a=>a.slice())};
+  const grp=(SEL.size>1&&SEL.has(idk))?S.filter(q=>SEL.has(q.id)):[s];
+  mv={x,y,id:idk,tap:multi&&was,moved:false,g:grp.map(q=>({s:q,p:q.pts.map(a=>a.slice())}))};
 });
 addEventListener('pointermove',e=>{
   const r=stage.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
   if(fp)flowAt(S[act],x,y);
-  else if(mv){const dx=x-mv.x,dy=y-mv.y;S[act].pts=mv.p.map(a=>[Math.min(1,Math.max(0,a[0]+dx)),Math.min(1,Math.max(0,a[1]+dy))]);apply()}
+  else if(mv){const dx=x-mv.x,dy=y-mv.y;if(Math.abs(dx)+Math.abs(dy)>.004)mv.moved=true;mv.g.forEach(({s,p})=>{s.pts=p.map(a=>[Math.min(1,Math.max(0,a[0]+dx)),Math.min(1,Math.max(0,a[1]+dy))])});apply()}
 });
-addEventListener('pointerup',()=>{if(mv){mv=null;commit()}fp=false});
+addEventListener('pointerup',()=>{if(mv){if(mv.tap&&!mv.moved){SEL.delete(mv.id);pick(act)}mv=null;commit()}fp=false});
 
 // sticky corners
 hs.forEach((el,i)=>el.addEventListener('pointermove',()=>{
@@ -1075,14 +1090,17 @@ function drawT(s,t){
   const lh=size*1.15,y0=h/2-(L.length-1)*lh/2,cxm=x.anim==='scroll'?w+mw/2-((t/4)%(w+mw)):w/2;
   L.forEach((l,i)=>{
     const y=y0+i*lh;
-    if(e==='wave'||e==='rainbow'||e==='arc'){
+    if(['wave','rainbow','arc','bounce','pop','drop','shake'].includes(e)){
       const ch=window.Intl&&Intl.Segmenter?[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(l)].map(g=>g.segment):[...l],cw=ch.map(k=>c.measureText(k).width),tw=cw.reduce((a,b)=>a+b,0);let px=cxm-tw/2;
       ch.forEach((k,j)=>{
-        const mx=px+cw[j]/2;let my=y,rot=0;
+        let mx=px+cw[j]/2,my=y,rot=0,sc=1;
         if(e==='wave')my+=Math.sin(t/300+j*.6)*size*.15;
+        if(e==='bounce')my-=Math.abs(Math.sin(t/260+j*.5))*size*.3;
+        if(e==='shake'){my+=(Math.random()-.5)*size*.06;rot=(Math.random()-.5)*.12}
+        if(e==='pop'||e==='drop'){const ph=((t/160)%(ch.length+6))-j;if(ph<0)sc=0;else if(e==='pop')sc=Math.min(1.15,ph*1.6);else my-=Math.max(0,1-ph)*size*1.2}
         if(e==='arc'){const R=w*.55,a=(mx-w/2)/R;my+=R*(1-Math.cos(a))*.6-size*.3;rot=a*.8}
         c.fillStyle=e==='rainbow'?`hsl(${(j*30+t/10)%360},90%,60%)`:x.color;
-        c.save();c.translate(mx,my);c.rotate(rot);c.fillText(k,0,0);c.restore();px+=cw[j];
+        c.save();c.translate(mx,my);c.rotate(rot);c.scale(sc,sc);c.fillText(k,0,0);c.restore();px+=cw[j];
       });
     }else if(e==='outline'){c.fillStyle=x.bg;c.fillText(l,cxm,y);c.strokeText(l,cxm,y)}
     else{c.fillStyle=x.color;c.fillText(l,cxm,y)}
@@ -1161,6 +1179,493 @@ const diFor=r=>r>=1?16:r>=.5?33:66;
 function fitRes(){S.forEach(s=>{if(s.txt||s.des||s.sl||s.test){s.cv.width=QW();s.cv.height=QH();s.ds=null}});apply()}
 $('#qsel').value=RS>=1?'1':RS>=.5?'0.5':'0.35';DI=diFor(RS);
 $('#qsel').onchange=e=>{RS=+e.target.value;DI=diFor(RS);try{localStorage.setItem('pm_rs',String(RS))}catch(x){}fitRes();toast('Quality badal gayi')};
+
+// ===== Export: poora mapped output video / photo banao (projector ko Share karne ke liye) =====
+var XR=null,XF=null;
+const MI=new Map();
+function maskImg(u){
+  if(!u||u==='none')return null;
+  let m=MI.get(u);
+  if(!m){const a=u.indexOf('(')+1,b=u.lastIndexOf(')');let s=u.slice(a,b);if(s.charCodeAt(0)===34||s.charCodeAt(0)===39)s=s.slice(1,-1);m=new Image();m.src=s;MI.set(u,m)}
+  return m.complete&&m.naturalWidth?m:null;
+}
+function clipPath2(c,cp,w,h){
+  if(!cp)return;let m;c.beginPath();
+  if(m=cp.match(/inset\(0 ([\d.]+)% 0 0\)/))c.rect(0,0,w*(1-m[1]/100),h);
+  else if(m=cp.match(/inset\(0 0 ([\d.]+)% 0\)/))c.rect(0,0,w,h*(1-m[1]/100));
+  else if(m=cp.match(/circle\(([\d.]+)%/))c.arc(w/2,h/2,m[1]/100*Math.hypot(w,h)/Math.SQRT2,0,TAU);
+  else if(m=cp.match(/polygon\(50% ([-\d.]+)%,([-\d.]+)% 50%,50% ([-\d.]+)%,([-\d.]+)% 50%\)/)){c.moveTo(w/2,m[1]/100*h);c.lineTo(m[2]/100*w,h/2);c.lineTo(w/2,m[3]/100*h);c.lineTo(m[4]/100*w,h/2);c.closePath()}
+  else return;
+  c.clip();
+}
+function tri(c,img,p0,p1,p2){
+  const [sx0,sy0,dx0,dy0]=p0,[sx1,sy1,dx1,dy1]=p1,[sx2,sy2,dx2,dy2]=p2,den=(sx1-sx0)*(sy2-sy0)-(sx2-sx0)*(sy1-sy0);
+  if(!den)return;
+  const a=((dx1-dx0)*(sy2-sy0)-(dx2-dx0)*(sy1-sy0))/den,c2=((dx2-dx0)*(sx1-sx0)-(dx1-dx0)*(sx2-sx0))/den,b=((dy1-dy0)*(sy2-sy0)-(dy2-dy0)*(sy1-sy0))/den,d=((dy2-dy0)*(sx1-sx0)-(dy1-dy0)*(sx2-sx0))/den;
+  const cx=(dx0+dx1+dx2)/3,cy=(dy0+dy1+dy2)/3,ex=(x,y)=>{const l=Math.hypot(x-cx,y-cy)||1;return[x+(x-cx)/l*1.3,y+(y-cy)/l*1.3]},q0=ex(dx0,dy0),q1=ex(dx1,dy1),q2=ex(dx2,dy2);
+  c.save();c.beginPath();c.moveTo(q0[0],q0[1]);c.lineTo(q1[0],q1[1]);c.lineTo(q2[0],q2[1]);c.closePath();c.clip();
+  c.transform(a,b,c2,d,dx0-a*sx0-c2*sy0,dy0-b*sx0-d*sy0);c.drawImage(img,0,0);c.restore();
+}
+function warp(c,img,D){
+  const w=img.width,h=img.height,P=[[0,0],[w,0],[w,h],[0,h]],A=[],B=[];
+  P.forEach(([x,y],i)=>{const [u,v]=D[i];A.push([x,y,1,0,0,0,-u*x,-u*y]);B.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);B.push(v)});
+  const [a,b,cc,d,e,f,g,k]=solve(A,B),T=(x,y)=>{const z=g*x+k*y+1;return[x,y,(a*x+b*y+cc)/z,(d*x+e*y+f)/z]},N=8;
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++){
+    const x0=j*w/N,x1=(j+1)*w/N,y0=i*h/N,y1=(i+1)*h/N;
+    tri(c,img,T(x0,y0),T(x1,y0),T(x1,y1));tri(c,img,T(x0,y0),T(x1,y1),T(x0,y1));
+  }
+}
+function composite(oc,OW,OH){
+  const c=oc.getContext('2d');
+  c.setTransform(1,0,0,1,0,0);c.globalAlpha=1;c.filter='none';c.fillStyle='#000';c.fillRect(0,0,OW,OH);
+  const dim=G.black?0:G.dim/100;
+  S.forEach(s=>{
+    const R=s._R||{tf:'',op:1,fl:'',cp:''},src=s.src,w=src.videoWidth||src.width,h=src.videoHeight||src.height;
+    if(!w||!h||R.op<=0||(s.fx&&s.fx.phase==='hidden'))return;
+    const k=Math.min(1,1280/Math.max(w,h)),ww=Math.round(w*k),hh=Math.round(h*k),wc=s._xc||(s._xc=document.createElement('canvas'));
+    wc.width=ww;wc.height=hh;
+    const x=wc.getContext('2d');let m;try{m=new DOMMatrix(R.tf||'none')}catch(e){m=new DOMMatrix()}
+    x.save();x.scale(k,k);x.translate(w/2,h/2);x.transform(m.a,m.b,m.c,m.d,m.e,m.f);x.translate(-w/2,-h/2);
+    clipPath2(x,R.cp,w,h);x.globalAlpha=R.op;x.filter=R.fl||'none';x.drawImage(src,0,0,w,h);x.restore();
+    const mi=maskImg(s.wr.style.maskImage||s.wr.style.webkitMaskImage);
+    if(mi){x.globalCompositeOperation='destination-in';x.drawImage(mi,0,0,ww,hh);x.globalCompositeOperation='source-over'}
+    c.globalCompositeOperation=s.bl?'screen':'source-over';c.globalAlpha=dim;warp(c,wc,s.pts.map(p=>[p[0]*OW,p[1]*OH]));c.globalAlpha=1;c.globalCompositeOperation='source-over';
+  });
+}
+function expTick(){
+  if(!XR)return;
+  const now=performance.now();if(now-XR.lt<33)return;XR.lt=now;
+  composite(XR.oc,XR.OW,XR.OH);
+  const left=Math.max(0,(XR.end-now)/1000);$('#xst').textContent='\u23fa Record ho raha hai... '+left.toFixed(0)+' sec baaki';
+  if(left<=0){const r=XR.rec;XR=null;r.stop()}
+}
+pj.insertAdjacentHTML('beforeend',`<div class='sec'>\ud83c\udfac Export (projector ko Share karne ke liye)</div><div class='ln'>Size <select id='xres'><option value='960x540'>960x540</option><option value='1280x720'>1280x720</option><option value='1920x1080'>1920x1080</option></select> Time <input id='xsec' type='number' value='10' min='2' max='120'> sec</div><div class='ln'><label><input id='xsq' type='checkbox'> Sequence saath me chalao</label></div><div class='ln'><button id='xv' class='acc'>\ud83c\udfac Video banao</button><button id='xp'>\ud83d\uddbc Photo banao</button></div><div class='ln'><button id='xsh'>\ud83d\udce4 Share</button><button id='xdl'>\u2b07 Download</button></div><div class='aan' id='xst'>Video/photo me saari surfaces, shapes aur animation aati hain. Awaaz nahi aati. Banne ke baad Share dabao aur projector wale option se bhejo.</div>`);
+$('#xres').value=matchMedia('(pointer:coarse)').matches?'960x540':'1280x720';
+const xFinish=(f,msg)=>{XF=f;$('#xst').textContent=msg+' ('+(f.size/1048576).toFixed(1)+' MB)';toast(msg)};
+$('#xp').onclick=()=>{
+  const [W,H]=$('#xres').value.split('x').map(Number),oc=document.createElement('canvas');oc.width=W;oc.height=H;
+  composite(oc,W,H);toast('Photo ban rahi hai...');
+  setTimeout(()=>{composite(oc,W,H);oc.toBlob(b=>xFinish(new File([b],'mapping.png',{type:'image/png'}),'Photo ban gayi'),'image/png')},500);
+};
+$('#xv').onclick=()=>{
+  if(XR)return;
+  if(!window.MediaRecorder){toast('Is browser me video export nahi hai');return}
+  const [W,H]=$('#xres').value.split('x').map(Number),oc=document.createElement('canvas');oc.width=W;oc.height=H;
+  composite(oc,W,H);
+  const mt=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'',base=mt.split(';')[0]||'video/webm';
+  const rec=new MediaRecorder(oc.captureStream(30),mt?{mimeType:mt,videoBitsPerSecond:6e6}:{}),ch=[];
+  rec.ondataavailable=e=>{if(e.data.size)ch.push(e.data)};
+  rec.onstop=()=>xFinish(new File([new Blob(ch,{type:base})],'mapping-show.'+(base==='video/mp4'?'mp4':'webm'),{type:base}),'Video ban gaya');
+  XR={rec,oc,OW:W,OH:H,lt:0,end:performance.now()+(+$('#xsec').value||10)*1000};
+  if($('#xsq').checked)seqGo();
+  rec.start(500);
+};
+$('#xsh').onclick=async()=>{
+  if(!XF){toast('Pehle Video ya Photo banao');return}
+  try{if(navigator.canShare&&navigator.canShare({files:[XF]})){await navigator.share({files:[XF],title:'Projection mapping'});return}}catch(e){if(e&&e.name==='AbortError')return}
+  toast('Share nahi ho paya, Download dabao');
+};
+$('#xdl').onclick=()=>{
+  if(!XF){toast('Pehle Video ya Photo banao');return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(XF);a.download=XF.name;document.body.appendChild(a);a.click();a.remove();
+};
+
+// ===== Shape / point editing =====
+var EDP={on:false,mode:'move',hs:[]};
+function polyDraw(c,w,h,pts){if(!pts)return;c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x*w,y*h):c.moveTo(x*w,y*h));c.closePath();c.fill()}
+function shapePts(k){
+  const pts=[];let done=false,cur=null;
+  const add=(x,y)=>{if(!done){cur=[x,y];pts.push(cur)}};
+  const P={globalCompositeOperation:'source-over',fillStyle:'',beginPath(){if(pts.length)done=true},moveTo:add,lineTo:add,closePath(){},fill(){},
+    arc(x,y,r,a0,a1){for(let i=0;i<=48;i++){const a=a0+(a1-a0)*i/48;add(x+r*Math.cos(a),y+r*Math.sin(a))}},
+    ellipse(x,y,rx,ry,rot,a0,a1){for(let i=0;i<=48;i++){const a=a0+(a1-a0)*i/48;add(x+rx*Math.cos(a),y+ry*Math.sin(a))}},
+    bezierCurveTo(x1,y1,x2,y2,x,y){const [x0,y0]=cur;for(let i=1;i<=12;i++){const t=i/12,m=1-t;add(m*m*m*x0+3*m*m*t*x1+3*m*t*t*x2+t*t*t*x,m*m*m*y0+3*m*m*t*y1+3*m*t*t*y2+t*t*t*y)}},
+    roundRect(x,y,w,h,r){[[x+w-r,y+r,-1.5708],[x+w-r,y+h-r,0],[x+r,y+h-r,1.5708],[x+r,y+r,3.1416]].forEach(([cx,cy,a])=>{for(let i=0;i<=8;i++){const b=a+1.5708*i/8;add(cx+r*Math.cos(b),cy+r*Math.sin(b))}})}};
+  SHP[k][1](P,1,1);
+  return pts.length?pts.map(([x,y])=>[Math.min(1,Math.max(0,x)),Math.min(1,Math.max(0,y))]):null;
+}
+function simplify(P,max){
+  P=P.filter((p,i)=>!i||Math.hypot(p[0]-P[i-1][0],p[1]-P[i-1][1])>1e-4);
+  if(P.length>2&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<1e-4)P.pop();
+  const area=(a,b,c)=>Math.abs((b[0]-a[0])*(c[1]-a[1])-(c[0]-a[0])*(b[1]-a[1]));
+  while(P.length>max){let best=-1,bi=0;P.forEach((p,i)=>{const A=area(P[(i+P.length-1)%P.length],p,P[(i+1)%P.length]);if(best<0||A<best){best=A;bi=i}});P.splice(bi,1)}
+  return P;
+}
+function ensurePoly(s){
+  if(s.shape&&s.shape.on&&s.shape.kind==='poly')return;
+  let pts=null;
+  if(s.shape&&s.shape.on&&SHP[s.shape.kind]&&s.shape.kind!=='moon')pts=shapePts(s.shape.kind);
+  if(pts)pts=simplify(pts,24);
+  if(!pts)pts=[[.05,.05],[.5,.05],[.95,.05],[.95,.5],[.95,.95],[.5,.95],[.05,.95],[.05,.5]];
+  s.sil=null;s.shape={on:true,text:(s.shape&&s.shape.text)||'HELLO',kind:'poly',pts};
+  if(!s.txt&&!s.des&&!s.sl&&s.src===s.cv&&s.test){s.des='grad';s.ds=null;s.test=false;s.cv.width=QW();s.cv.height=QH()}
+}
+function fwdF(s,W,H){
+  const P=[[0,0],[1,0],[1,1],[0,1]],A=[],B=[];
+  s.pts.forEach((q,i)=>{const [x,y]=P[i],X=q[0]*W,Y=q[1]*H;A.push([x,y,1,0,0,0,-X*x,-X*y]);B.push(X);A.push([0,0,0,x,y,1,-Y*x,-Y*y]);B.push(Y)});
+  const [a,b,c,d,e,f,g,k]=solve(A,B);
+  return (u,v)=>{const z=g*u+k*v+1;return[(a*u+b*v+c)/z,(d*u+e*v+f)/z]};
+}
+function mkPH(){
+  const el=document.createElement('div');el.className='h pp';stage.appendChild(el);EDP.hs.push(el);
+  el.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();
+    const i=EDP.hs.indexOf(el),s=S[act];
+    if(EDP.mode==='del'){if(s.shape.pts.length>3)s.shape.pts.splice(i,1);return}
+    el.setPointerCapture(e.pointerId);el._d=true;s._pd=true;
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!el._d)return;
+    const i=EDP.hs.indexOf(el),s=S[act],r=stage.getBoundingClientRect(),q=toSrc(s,(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height);
+    s.shape.pts[i]=[Math.min(1,Math.max(0,q[0]/1280)),Math.min(1,Math.max(0,q[1]/720))];
+  });
+  const up=()=>{if(el._d){el._d=false;S[act]._pd=false}};
+  el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+}
+function polyTick(){
+  if(!EDP)return;
+  const s=S[act],on=EDP.on&&!outMode&&s&&s.shape&&s.shape.on&&s.shape.kind==='poly';
+  const tb=document.getElementById('ptb');if(tb)tb.classList.toggle('hide',!on);
+  if(!on){if(EDP.hs.length){EDP.hs.forEach(e=>e.remove());EDP.hs=[]}return}
+  const pts=s.shape.pts;
+  while(EDP.hs.length<pts.length)mkPH();
+  while(EDP.hs.length>pts.length)EDP.hs.pop().remove();
+  const f=fwdF(s,stage.clientWidth,stage.clientHeight);
+  pts.forEach((p,i)=>{const q=f(p[0],p[1]);EDP.hs[i].style.left=q[0]+'px';EDP.hs[i].style.top=q[1]+'px'});
+}
+function polyOp(op){
+  const s=S[act];ensurePoly(s);
+  const P=s.shape.pts,cx=P.reduce((a,p)=>a+p[0],0)/P.length,cy=P.reduce((a,p)=>a+p[1],0)/P.length;
+  s.shape.pts=P.map(([x,y])=>{
+    let dx=(x-cx)*1280,dy=(y-cy)*720;
+    if(op==='big'){dx*=1.1;dy*=1.1}else if(op==='small'){dx/=1.1;dy/=1.1}
+    else if(op==='fh')dx=-dx;else if(op==='fv')dy=-dy;
+    else{const a=(op==='rl'?-1:1)*Math.PI/12,ca=Math.cos(a),sa=Math.sin(a);[dx,dy]=[dx*ca-dy*sa,dx*sa+dy*ca]}
+    return[Math.min(1,Math.max(0,cx+dx/1280)),Math.min(1,Math.max(0,cy+dy/720))];
+  });
+}
+const pedDiv=mk(`<div class='sec'>\u270f Shape / Points edit</div><div class='ln'><button id='pe' class='acc'>\u270f Points edit: OFF</button></div><div class='ln'><button data-pm='move' class='on'>\u270b Move</button><button data-pm='add'>\u2795 Point jodo</button><button data-pm='del'>\ud83d\uddd1 Point hatao</button></div><div class='ln'><button data-po='big'>\u2922 Bada</button><button data-po='small'>\u2921 Chhota</button><button data-po='rl'>\u27f2</button><button data-po='rr'>\u27f3</button><button data-po='fh'>\u2194</button><button data-po='fv'>\u2195</button></div><div class='aan'>Points edit ON karo: peele circles shape ke points hain, unhe drag karo. Point jodo: shape ke kinaare ke paas tap karo. Point hatao: kisi point par tap karo. Shape pehle se chuna ho to wahi points me badal jata hai.</div>`);
+shDiv.after(pedDiv);
+pedDiv.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.id==='pdone'){EDP.on=false;$('#pe').textContent='\u270f Points edit: OFF';return}
+  if(b.id==='pe'){
+    EDP.on=!EDP.on;
+    if(EDP.on){$('#panel').classList.remove('open');if(S[act].shape&&S[act].shape.kind==='moon')toast('Moon ko points me nahi badal sakte, koi aur shape chuno');ensurePoly(S[act]);renderPanel();apply()}
+    b.textContent='\u270f Points edit: '+(EDP.on?'ON':'OFF');
+  }else if(b.dataset.pm){
+    EDP.mode=b.dataset.pm;document.querySelectorAll('[data-pm]').forEach(x=>x.classList.toggle('on',x.dataset.pm===b.dataset.pm));
+  }else if(b.dataset.po){polyOp(b.dataset.po);renderPanel()}
+});
+stage.addEventListener('pointerdown',e=>{
+  const s=S[act];
+  if(EDP.mode!=='add'||!EDP.on||outMode||!s||!s.shape||s.shape.kind!=='poly'||e.target.classList.contains('h'))return;
+  mv=null;
+  const r=stage.getBoundingClientRect(),q=toSrc(s,(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height),u=Math.min(1,Math.max(0,q[0]/1280)),v=Math.min(1,Math.max(0,q[1]/720)),P=s.shape.pts;
+  let bi=0,bd=1e9;
+  P.forEach((a,i)=>{const c2=P[(i+1)%P.length],dx=c2[0]-a[0],dy=c2[1]-a[1],L=dx*dx+dy*dy||1e-9,t=Math.max(0,Math.min(1,((u-a[0])*dx+(v-a[1])*dy)/L)),d=Math.hypot(u-(a[0]+t*dx),v-(a[1]+t*dy));if(d<bd){bd=d;bi=i}});
+  P.splice(bi+1,0,[u,v]);
+});
+
+// floating toolbar while points-edit is ON
+document.head.insertAdjacentHTML('beforeend',`<style>#ptb{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:14;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:94vw;background:rgba(22,24,30,.96);padding:8px;border-radius:14px;border:1px solid #3d424d}#ptb button{padding:9px 11px}</style>`);
+const ptb=document.createElement('div');ptb.id='ptb';ptb.className='hide';
+ptb.innerHTML=`<button data-pm='move' class='on'>\u270b Move</button><button data-pm='add'>\u2795 Point</button><button data-pm='del'>\ud83d\uddd1 Hatao</button><button data-po='rl'>\u27f2</button><button data-po='rr'>\u27f3</button><button data-po='big'>\u2922</button><button data-po='small'>\u2921</button><button id='pdone' class='acc'>\u2714 Done</button>`;
+document.body.appendChild(ptb);
+ptb.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.id==='pdone'){EDP.on=false;$('#pe').textContent='\u270f Points edit: OFF';return}
+  const t=b.dataset.pm?pedDiv.querySelector(`[data-pm=${b.dataset.pm}]`):pedDiv.querySelector(`[data-po=${b.dataset.po}]`);
+  if(t)t.click();
+});
+
+// ===== Rangoli + more 3D + GIF-jaisi animations =====
+var TRANSP=false;
+const BG=(c,w,h,col)=>{if(TRANSP){c.clearRect(0,0,w,h);return}c.fillStyle=col;c.fillRect(0,0,w,h)};
+const petal=(c,r1,r2,wd)=>{const d=r2-r1;c.beginPath();c.moveTo(r1,0);c.bezierCurveTo(r1+d*.3,-wd,r1+d*.8,-wd,r2,0);c.bezierCurveTo(r1+d*.8,wd,r1+d*.3,wd,r1,0);c.fill()};
+const P3=(x,y,z,ax,ay,w,h,k)=>{let a=y*Math.cos(ax)-z*Math.sin(ax),b=y*Math.sin(ax)+z*Math.cos(ax);y=a;z=b;a=x*Math.cos(ay)+z*Math.sin(ay);b=-x*Math.sin(ay)+z*Math.cos(ay);const f=h*k/(3.2-b);return[w/2+a*f,h/2+y*f,b]};
+D.rangoli=['\ud83c\udf3c Rangoli mandala',(c,w,h,t)=>{
+  BG(c,w,h,'#14041f');c.save();c.translate(w/2,h/2);const R=h*.44;
+  [[1,16,0,0],[.82,12,.5,40],[.62,16,0,300],[.44,10,.3,30],[.28,8,0,200],[.14,6,.2,50]].forEach(([k,n,ph,hue],i)=>{
+    c.save();c.rotate(t/(4000+i*900)*(i%2?-1:1)+ph);
+    for(let j=0;j<n;j++){c.rotate(TAU/n);c.fillStyle=`hsl(${(hue+j*(180/n)+t/40)%360},90%,${55+(i%3)*8}%)`;petal(c,R*k*.35,R*k,R*k*.18)}
+    c.restore();
+  });
+  c.fillStyle='#fff6c8';c.beginPath();c.arc(0,0,R*.06,0,TAU);c.fill();c.fillStyle='#fff';
+  for(let j=0;j<48;j++){const a=j/48*TAU+t/3000;c.beginPath();c.arc(Math.cos(a)*R*1.08,Math.sin(a)*R*1.08,4,0,TAU);c.fill()}
+  c.restore();
+}];
+D.lotus=['\ud83e\udeb7 Lotus rangoli',(c,w,h,t)=>{
+  BG(c,w,h,'#07131f');c.save();c.translate(w/2,h*.55);const b=.9+.1*Math.sin(t/900);
+  for(let L=3;L>=0;L--){const n=8+L*2,len=h*(.18+L*.1)*b;c.save();c.rotate(L*.2+t/8000*(L%2?1:-1));
+    for(let j=0;j<n;j++){c.rotate(TAU/n);c.fillStyle=`hsl(${330+L*8},${80-L*8}%,${88-L*12}%)`;c.strokeStyle='rgba(255,255,255,.6)';c.lineWidth=2;petal(c,len*.1,len,len*.22);c.stroke()}
+    c.restore()}
+  c.fillStyle='#ffd54a';c.beginPath();c.arc(0,0,h*.05,0,TAU);c.fill();c.restore();
+}];
+D.kolam=['\u26aa Kolam dots',(c,w,h,t)=>{
+  BG(c,w,h,'#0b0b14');const g=70,cols=Math.ceil(w/g)+1,rows=Math.ceil(h/g)+1;
+  c.fillStyle='#fff';for(let y=0;y<rows;y+=2)for(let x=0;x<cols;x+=2){c.beginPath();c.arc(x*g,y*g,5,0,TAU);c.fill()}
+  c.lineWidth=5;c.lineCap='round';
+  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+    if((x+y)%2===0)continue;const v=x%2===0;
+    c.save();c.translate(x*g,y*g);if(v)c.rotate(Math.PI/2);c.strokeStyle=`hsl(${(x*40+y*30+t/20)%360},90%,65%)`;
+    c.beginPath();c.moveTo(-g,0);c.bezierCurveTo(-g,-g,0,-g,0,0);c.bezierCurveTo(0,g,g,g,g,0);c.bezierCurveTo(g,-g,0,-g,0,0);c.bezierCurveTo(0,g,-g,g,-g,0);c.stroke();c.restore();
+  }
+}];
+D.diyaring=['\ud83e\ude94 Diya ring',(c,w,h,t)=>{
+  BG(c,w,h,'#0a0300');const cx=w/2,cy=h/2;c.globalCompositeOperation='lighter';
+  for(let r=0;r<3;r++){const n=8+r*8,R=h*(.14+r*.14);for(let i=0;i<n;i++){const a=i/n*TAU+(r%2?-1:1)*t/6000,x=cx+Math.cos(a)*R,y=cy+Math.sin(a)*R,f=1+Math.sin(t/110+i*2+r)*.18,g=c.createRadialGradient(x,y,0,x,y,34*f);g.addColorStop(0,'#fff2a8');g.addColorStop(.35,'rgba(255,150,30,.8)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x-40,y-40,80,80)}}
+  c.globalCompositeOperation='source-over';
+}];
+D.pyramid=['\ud83d\udd3a 3D Pyramid',(c,w,h,t)=>{
+  BG(c,w,h,'#05060f');c.lineWidth=5;c.strokeStyle=`hsl(${t/15%360},100%,60%)`;
+  const V=[[-1,1,-1],[1,1,-1],[1,1,1],[-1,1,1],[0,-1.2,0]],E=[[0,1],[1,2],[2,3],[3,0],[0,4],[1,4],[2,4],[3,4]],P=V.map(v=>P3(v[0],v[1],v[2],.35,t/800,w,h,.5));
+  c.beginPath();E.forEach(([a,b])=>{c.moveTo(P[a][0],P[a][1]);c.lineTo(P[b][0],P[b][1])});c.stroke();
+}];
+D.torus=['\ud83c\udf69 3D Torus',(c,w,h,t)=>{
+  BG(c,w,h,'#05060f');c.lineWidth=2;
+  for(let i=0;i<24;i++){c.beginPath();for(let j=0;j<=24;j++){const u=i/24*TAU,v=j/24*TAU,r=1+.4*Math.cos(v),p=P3(r*Math.cos(u),.4*Math.sin(v),r*Math.sin(u),t/1100,t/1500,w,h,.55);j?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])}c.strokeStyle=`hsl(${i*15+t/20},90%,60%)`;c.stroke()}
+}];
+D.atom=['\u269b 3D Atom',(c,w,h,t)=>{
+  BG(c,w,h,'#04050c');c.lineWidth=2;
+  for(let k=0;k<3;k++){c.strokeStyle=`hsl(${k*110+200},90%,65%)`;c.beginPath();
+    for(let j=0;j<=60;j++){const a=j/60*TAU,p=P3(Math.cos(a)*1.5,Math.sin(a)*.55,0,k*1.05,k*1.2+t/2500,w,h,.5);j?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])}c.stroke();
+    const a=t/500+k*2,p=P3(Math.cos(a)*1.5,Math.sin(a)*.55,0,k*1.05,k*1.2+t/2500,w,h,.5);c.fillStyle='#fff';c.beginPath();c.arc(p[0],p[1],10,0,TAU);c.fill()}
+  const g=c.createRadialGradient(w/2,h/2,0,w/2,h/2,60);g.addColorStop(0,'#fff');g.addColorStop(1,'rgba(255,120,40,0)');c.fillStyle=g;c.beginPath();c.arc(w/2,h/2,60,0,TAU);c.fill();
+}];
+D.galaxy=['\ud83c\udf0c 3D Galaxy',(c,w,h,t,s)=>{
+  const a=s.ds||(s.ds=Array.from({length:600},()=>({r:Math.pow(rnd(),.6),a:rnd()*TAU,h:200+rnd()*160,z:(rnd()-.5)*.15})));
+  BG(c,w,h,'#02030a');
+  a.forEach(p=>{const an=p.a+p.r*5+t/9000*(1.2-p.r),X=w/2+Math.cos(an)*p.r*h*.75*1.4,Y=h/2+Math.sin(an)*p.r*h*.34+p.z*h,z=2+(1-p.r)*3;c.fillStyle=`hsla(${p.h-p.r*60},90%,${60+(1-p.r)*30}%,${.9-p.r*.5})`;c.fillRect(X,Y,z,z)});
+  const g=c.createRadialGradient(w/2,h/2,0,w/2,h/2,h*.18);g.addColorStop(0,'rgba(255,240,200,.9)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(0,0,w,h);
+}];
+D.tunnel3d=['\ud83c\udf00 3D Tunnel',(c,w,h,t)=>{
+  BG(c,w,h,'#000');c.lineWidth=4;const N=16,L=[];for(let k=0;k<N;k++)L.push(((k+t/260)%N)/N);L.sort((a,b)=>a-b);
+  L.forEach(z=>{const s=Math.pow(z,2.2),sw=w*s*1.1,sh=h*s*1.1;c.strokeStyle=`hsla(${(z*360+t/15)%360},100%,60%,${Math.min(1,z*1.5)})`;c.strokeRect(w/2-sw/2,h/2-sh/2,sw,sh)});
+}];
+D.fireworks=['\ud83c\udf86 Fireworks',(c,w,h,t,s)=>{
+  const a=s.ds||(s.ds={p:[],n:0});c.fillStyle='rgba(0,0,10,.25)';c.fillRect(0,0,w,h);
+  if(t-a.n>700){a.n=t;const x=w*(.15+rnd()*.7),y=h*(.15+rnd()*.4),hu=rnd()*360;for(let i=0;i<70;i++){const an=rnd()*TAU,v=1+rnd()*5;a.p.push({x,y,vx:Math.cos(an)*v,vy:Math.sin(an)*v,l:1,hu})}}
+  c.globalCompositeOperation='lighter';a.p=a.p.filter(p=>p.l>0);
+  a.p.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.06;p.vx*=.985;p.l-=.012;c.fillStyle=`hsla(${p.hu},100%,60%,${p.l})`;c.beginPath();c.arc(p.x,p.y,3,0,TAU);c.fill()});
+  c.globalCompositeOperation='source-over';
+}];
+D.rain=['\ud83c\udf27 Rain',(c,w,h,t,s)=>{
+  const a=s.ds||(s.ds=Array.from({length:160},()=>({x:rnd()*w,y:rnd()*h,v:14+rnd()*14,l:18+rnd()*24})));
+  BG(c,w,h,'#0a1220');c.strokeStyle='rgba(170,200,255,.55)';c.lineWidth=2;c.beginPath();
+  a.forEach(p=>{p.y+=p.v;if(p.y>h){p.y=-30;p.x=rnd()*w}c.moveTo(p.x,p.y);c.lineTo(p.x-3,p.y+p.l)});c.stroke();
+}];
+D.lava=['\ud83e\udee0 Lava lamp',(c,w,h,t)=>{
+  const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#2a0050');g.addColorStop(1,'#500020');c.fillStyle=g;c.fillRect(0,0,w,h);c.globalCompositeOperation='lighter';
+  for(let i=0;i<6;i++){const x=w*(.5+.38*Math.sin(t/(2600+i*400)+i)),y=h*(.5+.42*Math.sin(t/(1900+i*330)+i*2)),r=h*(.18+.05*Math.sin(t/700+i)),gr=c.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`hsla(${(i*55+t/50)%360},100%,60%,.9)`);gr.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=gr;c.fillRect(x-r,y-r,2*r,2*r)}
+  c.globalCompositeOperation='source-over';
+}];
+D.ripple=['\ud83d\udca7 Ripples',(c,w,h,t,s)=>{
+  const a=s.ds||(s.ds={r:[],n:0});BG(c,w,h,'#031a2b');
+  if(t-a.n>650){a.n=t;a.r.push({x:rnd()*w,y:rnd()*h,t,hu:180+rnd()*60})}
+  a.r=a.r.filter(q=>t-q.t<3500);c.lineWidth=4;
+  a.r.forEach(q=>{const k=(t-q.t)/3500;for(let j=0;j<3;j++){const rr=k*h*.7-j*30;if(rr<=0)continue;c.strokeStyle=`hsla(${q.hu},90%,70%,${(1-k)*(1-j*.3)})`;c.beginPath();c.arc(q.x,q.y,rr,0,TAU);c.stroke()}});
+}];
+D.kaleido=['\ud83d\udd2e Kaleidoscope',(c,w,h,t)=>{
+  BG(c,w,h,'#080812');c.save();c.translate(w/2,h/2);
+  for(let k=0;k<12;k++){c.save();c.rotate(k*TAU/12);if(k%2)c.scale(1,-1);
+    for(let i=0;i<4;i++){const x=h*(.12+.1*i)+Math.sin(t/600+i)*30,y=Math.cos(t/800+i*1.3)*h*.12,r=18+10*Math.sin(t/500+i);c.fillStyle=`hsl(${(t/20+i*70+k*10)%360},95%,60%)`;c.beginPath();c.arc(x,y,r,0,TAU);c.fill()}
+    c.restore()}
+  c.restore();
+}];
+(()=>{
+  const grp=(title,ids)=>`<div class='sec'>${title}</div><div class='ln'>${ids.map(k=>`<button data-d='${k}'>${D[k][0]}</button>`).join('')}</div>`;
+  $('#pdt').previousElementSibling.insertAdjacentHTML('beforebegin',grp('\ud83e\ude94 Rangoli',['rangoli','lotus','kolam','diyaring'])+grp('\ud83e\uddca 3D (aur)',['pyramid','torus','atom','galaxy','tunnel3d'])+grp('\ud83c\udf9e Animation (GIF jaisi)',['fireworks','rain','lava','ripple','kaleido']));
+})();
+
+// ===== Multi-select: ek saath kai surface =====
+var SEL=new Set(),selMode=false;
+document.head.insertAdjacentHTML('beforeend',`<style>#chips button.ms{outline:2px solid #2ee6a6}</style>`);
+const selDiv=mk(`<div class='sec'>\u2611 Multi-select (ek saath kai surface)</div><div class='ln'><label><input id='msm' type='checkbox'> Multi-select mode</label><button id='msa'>Sab</button><button id='msc'>Clear</button></div><div class='ln' id='msi'>Selected: 0</div><div class='ln'><button data-ms='in'>\u25b6 Entry</button><button data-ms='out'>\u23cf Exit</button><button data-ms='cp'>\ud83d\udccb Active jaisa karo</button></div><div class='ln'>Align <button data-ms='al'>\u2b05</button><button data-ms='ar'>\u27a1</button><button data-ms='at'>\u2b06</button><button data-ms='ab'>\u2b07</button><button data-ms='ac'>\u2194c</button><button data-ms='av'>\u2195c</button></div><div class='ln'>Barabar doori <button data-ms='dh'>\u2194</button><button data-ms='dv'>\u2195</button><button data-ms='ds'>Same size</button><button data-ms='dl'>\ud83d\uddd1 Hatao</button></div><div class='aan'>Stage par Shift/Ctrl + tap, ya Multi-select mode me tap karo. Select ki hui (hari outline) surface ko drag karo to sab saath hilti hain.</div>`);
+chips.after(selDiv);
+const selList=()=>{const l=S.filter(s=>SEL.has(s.id));return l.length?l:[S[act]]};
+const bbox=s=>{const x=s.pts.map(p=>p[0]),y=s.pts.map(p=>p[1]);return{x0:Math.min(...x),x1:Math.max(...x),y0:Math.min(...y),y1:Math.max(...y)}};
+const shift=(s,dx,dy)=>{s.pts=s.pts.map(p=>[Math.min(1,Math.max(0,p[0]+dx)),Math.min(1,Math.max(0,p[1]+dy))])};
+$('#msm').onchange=e=>{selMode=e.target.checked;if(selMode&&S[act])SEL.add(S[act].id);pick(act)};
+$('#msa').onclick=()=>{S.forEach(s=>SEL.add(s.id));pick(act)};
+$('#msc').onclick=()=>{SEL.clear();pick(act)};
+selDiv.addEventListener('click',e=>{
+  const k=e.target.dataset.ms;if(!k)return;
+  const L=selList(),B=L.map(bbox),a=S[act];
+  if(k==='in')L.forEach(s=>trig(s.fx,'in'));
+  else if(k==='out')L.forEach(s=>trig(s.fx,'out'));
+  else if(k==='cp'){
+    L.forEach(s=>{if(s===a)return;
+      s.fx=Object.assign(defFx(),JSON.parse(JSON.stringify(a.fx)),{phase:'shown'});setFth(s,a.fth||0);
+      if(a.des||a.txt||a.test){s.des=a.des;s.col=a.col;s.col2=a.col2;s.txt=a.txt?JSON.parse(JSON.stringify(a.txt)):null;s.test=a.test;s.ds=null;s.sl=null;
+        s.cv.width=QW();s.cv.height=QH();s.vd.pause();s.src=s.cv}
+      if(a.shape)s.shape=JSON.parse(JSON.stringify(a.shape));
+    });toast('Sab ko active jaisa kar diya');
+  }
+  else if('al ar at ab ac av'.split(' ').includes(k)){
+    const mn=(f)=>Math.min(...B.map(f)),mx=(f)=>Math.max(...B.map(f));
+    L.forEach((s,i)=>{const b=B[i];
+      if(k==='al')shift(s,mn(q=>q.x0)-b.x0,0);
+      if(k==='ar')shift(s,mx(q=>q.x1)-b.x1,0);
+      if(k==='at')shift(s,0,mn(q=>q.y0)-b.y0);
+      if(k==='ab')shift(s,0,mx(q=>q.y1)-b.y1);
+      if(k==='ac')shift(s,(mn(q=>q.x0)+mx(q=>q.x1))/2-(b.x0+b.x1)/2,0);
+      if(k==='av')shift(s,0,(mn(q=>q.y0)+mx(q=>q.y1))/2-(b.y0+b.y1)/2);
+    });
+  }
+  else if((k==='dh'||k==='dv')&&L.length>2){
+    const h=k==='dh',c=i=>h?(B[i].x0+B[i].x1)/2:(B[i].y0+B[i].y1)/2,o=L.map((s,i)=>i).sort((p,q)=>c(p)-c(q)),first=c(o[0]),last=c(o[o.length-1]);
+    o.forEach((i,n)=>{const t=first+(last-first)*n/(o.length-1),d=t-c(i);h?shift(L[i],d,0):shift(L[i],0,d)});
+  }
+  else if(k==='ds'){
+    const ba=bbox(a),aw=ba.x1-ba.x0,ah=ba.y1-ba.y0;
+    L.forEach((s,i)=>{if(s===a)return;const b=B[i],cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2,sx=aw/Math.max(.01,b.x1-b.x0),sy=ah/Math.max(.01,b.y1-b.y0);
+      s.pts=s.pts.map(p=>[Math.min(1,Math.max(0,cx+(p[0]-cx)*sx)),Math.min(1,Math.max(0,cy+(p[1]-cy)*sy))])});
+  }
+  else if(k==='dl'){
+    const ids=L.map(s=>s.id);
+    ids.forEach(id=>{if(S.length<2)return;act=S.findIndex(s=>s.id===id);if(act>=0)$('#del').click()});
+    SEL.clear();pick(Math.min(act,S.length-1));return;
+  }
+  apply();commit();
+});
+const _rf2=renderFx;renderFx=()=>{_rf2();$('#msi').textContent='Selected: '+SEL.size+(selMode?' (mode ON)':'');$('#msm').checked=selMode};
+
+// ===== Multi-select: design / shape / effects / files sab selected surfaces par ek saath lagao =====
+var BYP=false;
+const MROOTS=[preDiv,shDiv,colDiv,flowDiv,vidDiv,slDiv,$('#ptxt'),fxDiv,$('#shp').parentNode,$('#pshp')];
+const MGLOBAL=['black','ain','aout','mute'];
+function multiApply(e){
+  if(BYP||SEL.size<2)return;
+  const t=e.target;if(!t||!t.closest)return;
+  if(!MROOTS.some(r=>r&&r.contains(t)))return;
+  const da=t.closest('[data-a]');if(da&&MGLOBAL.includes(da.dataset.a))return;
+  if(t.id==='dim'||t.id==='bt2'||t.id==='slf'||t.id==='pe')return;
+  const isIn=/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName);
+  if(e.type==='click'){
+    if(isIn)return;
+    const lab=t.closest('label');if(lab&&lab.querySelector('input[type=file]'))return;
+    if(!t.closest('button'))return;
+    if(t.closest('[data-tok]')){setTimeout(()=>$('#tx').dispatchEvent(new Event('input',{bubbles:true})),0);return}
+  }
+  e.stopImmediatePropagation();
+  const cur=act,shn=$('#shn'),sh0=shn.checked;
+  if(shDiv.contains(t))shn.checked=false;
+  BYP=true;
+  S.forEach((s,i)=>{if(!SEL.has(s.id))return;act=i;try{t.dispatchEvent(e.type==='click'?new MouseEvent('click',{bubbles:true,cancelable:true}):new Event(e.type,{bubbles:true}))}catch(x){}});
+  act=cur;BYP=false;shn.checked=sh0;
+  if(e.type!=='input')pick(cur);
+}
+['click','input','change'].forEach(ev=>document.addEventListener(ev,multiApply,true));
+const wrapFile=inp=>{
+  const o=inp.onchange;
+  inp.onchange=e=>{
+    const fs=[...e.target.files];
+    if(SEL.size<2||BYP){o(e);return}
+    BYP=true;const cur=act;
+    S.forEach((s,i)=>{if(SEL.has(s.id)){act=i;try{o({target:{files:fs,value:''}})}catch(x){}}});
+    act=cur;BYP=false;e.target.value='';pick(cur);
+  };
+};
+wrapFile($('#file'));wrapFile($('#slf'));$('#file2').onchange=$('#file').onchange;
+
+// ===== Transparent bg, clip art / characters, 3D models, draw + animate =====
+$('#tef').insertAdjacentHTML('beforeend',`<option value='bounce'>\u26f9 Bounce letters</option><option value='pop'>\ud83d\udca5 Pop letters</option><option value='drop'>\u2b07 Drop letters</option><option value='shake'>\ud83d\udcf3 Shake letters</option>`);
+fxDiv.insertAdjacentHTML('beforeend',`<div class='ln'><label><input id='blk' type='checkbox'> \ud83d\udd32 Background transparent (kaala hatao)</label></div>`);
+$('#blk').onchange=e=>{const s=S[act];s.bl=e.target.checked;s.wr.style.mixBlendMode=s.bl?'screen':'normal'};
+const _rf3=renderFx;renderFx=()=>{_rf3();const s=S[act];if(s)$('#blk').checked=!!s.bl};
+// clip art / emoji characters
+D.emoji=['\ud83c\udfad Clip art',(c,w,h,t,s)=>{
+  c.clearRect(0,0,w,h);const e=s.em||'\ud83e\ude94',n=[...e].length,size=Math.min(h*.85,w*.95/Math.max(1,n));
+  c.font=`${size}px 'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillStyle=s.col||'#ffd54a';c.fillText(e,w/2,h/2+size*.05);
+}];
+const EM=['\ud83e\ude94','\ud83d\udd49','\ud83d\udd14','\ud83d\uded5','\ud83c\udf3a','\ud83c\udf38','\ud83e\udeb7','\ud83c\udf3c','\ud83e\udd9a','\ud83d\udc18','\ud83d\udc05','\ud83e\udd81','\ud83d\udc0e','\ud83e\udd8b','\ud83d\udc26','\ud83d\udc1f','\ud83d\udc22','\ud83d\udc12','\ud83d\ude4f','\ud83d\udc51','\ud83e\udd34','\ud83d\udc78','\ud83e\uddd9','\ud83e\uddda','\ud83e\uddb8','\ud83d\udd7a','\ud83d\udc83','\ud83c\udf82','\ud83c\udf81','\ud83c\udf88','\ud83c\udf89','\ud83c\udf8a','\u2b50','\ud83c\udf19','\u2600','\ud83d\udd25','\ud83d\udc8e','\u2764'];
+const emoDiv=mk(`<div class='sec'>\ud83c\udfad Clip art / Character (transparent)</div><div class='ln' id='emg'>${EM.map(x=>`<button data-em='${x}'>${x}</button>`).join('')}</div><div class='ln'>Apna emoji / shabd <input id='emi' type='text' value='\ud83e\ude94'></div><div class='aan'>Upar Animation tab se Loop / Entry / Exit lagao to character hilega. Rang ke liye Colour 1.</div>`);
+preDiv.after(emoDiv);
+const useEmoji=v=>{const s=S[act];if(!v)return;s.em=v;if(s.des!=='emoji'){s.cv.width=QW();s.cv.height=QH();s.des='emoji';s.txt=null;s.sl=null;s.test=false;s.ds=null;s.vd.pause();s.src=s.cv}apply()};
+$('#emg').onclick=e=>{const b=e.target.closest('button');if(b){$('#emi').value=b.dataset.em;useEmoji(b.dataset.em)}};
+$('#emi').oninput=e=>useEmoji(e.target.value);
+MROOTS.push(emoDiv);
+// 3D models (solid, transparent) + OBJ import
+const octa={v:[[0,-1,0],[1,0,0],[0,0,1],[-1,0,0],[0,0,-1],[0,1,0]],f:[[0,2,1],[0,3,2],[0,4,3],[0,1,4],[5,1,2],[5,2,3],[5,3,4],[5,4,1]]};
+function subdiv(m){const v=m.v.map(a=>a.slice()),f=[],mid={},gm=(a,b)=>{const k=a<b?a+'_'+b:b+'_'+a;if(mid[k]===undefined){const p=v[a].map((x,i)=>(x+v[b][i])/2),l=Math.hypot(...p);v.push(p.map(x=>x/l));mid[k]=v.length-1}return mid[k]};m.f.forEach(([a,b,c])=>{const ab=gm(a,b),bc=gm(b,c),ca=gm(c,a);f.push([a,ab,ca],[b,bc,ab],[c,ca,bc],[ab,bc,ca])});return{v,f}}
+const MESH={
+  cube:{v:[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]].map(a=>a.map(x=>x*.75)),f:[[0,1,2],[0,2,3],[4,6,5],[4,7,6],[0,4,5],[0,5,1],[2,6,7],[2,7,3],[1,5,6],[1,6,2],[0,3,7],[0,7,4]]},
+  pyramid:{v:[[-1,1,-1],[1,1,-1],[1,1,1],[-1,1,1],[0,-1.3,0]].map(a=>a.map(x=>x*.8)),f:[[0,2,1],[0,3,2],[0,1,4],[1,2,4],[2,3,4],[3,0,4]]},
+  gem:{v:[[0,-1.2,0],[1,0,0],[0,0,1],[-1,0,0],[0,0,-1],[0,1.2,0]].map(a=>a.map(x=>x*.8)),f:octa.f},
+  sphere:subdiv(subdiv(subdiv(octa)))
+};
+const hex=h=>[1,3,5].map(i=>parseInt((h||'#4da3ff').slice(i,i+2),16)||0);
+D.model=['\ud83d\udce6 3D model',(c,w,h,t,s)=>{
+  c.clearRect(0,0,w,h);const m=s.mesh||MESH.cube,ay=t/1500,ax=-.35,ca=Math.cos(ay),sa=Math.sin(ay),cx=Math.cos(ax),sx=Math.sin(ax),k=h*.42,col=hex(s.col);
+  const V=m.v.map(([x,y,z])=>{const x1=x*ca+z*sa,z1=-x*sa+z*ca,y1=y*cx-z1*sx,z2=y*sx+z1*cx,f=3.2/(3.2-z2);return[w/2+x1*k*f,h/2+y1*k*f,z2,x1,y1,z1]});
+  const T=m.f.map(([a,b,c2])=>{const A=V[a],B=V[b],C=V[c2],ux=B[3]-A[3],uy=B[4]-A[4],uz=B[5]-A[5],vx=C[3]-A[3],vy=C[4]-A[4],vz=C[5]-A[5];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;return{A,B,C,z:(A[2]+B[2]+C[2])/3,d:Math.abs((nx*.4+ny*-.6+nz*.7)/l)/.9}}).sort((p,q)=>p.z-q.z);
+  T.forEach(({A,B,C,d})=>{const f=.3+.7*Math.min(1,d),fill=`rgb(${col.map(v=>Math.round(v*f)).join(',')})`;c.fillStyle=fill;c.strokeStyle=fill;c.lineWidth=1;c.beginPath();c.moveTo(A[0],A[1]);c.lineTo(B[0],B[1]);c.lineTo(C[0],C[1]);c.closePath();c.fill();c.stroke()});
+}];
+function parseOBJ(txt){
+  const V=[],F=[];
+  txt.split('\n').forEach(l=>{const a=l.trim().split(/\s+/);if(a[0]==='v')V.push([+a[1],-a[2],+a[3]]);else if(a[0]==='f'){const ix=a.slice(1).map(x=>{const i=parseInt(x);return i<0?V.length+i:i-1});for(let i=1;i<ix.length-1;i++)F.push([ix[0],ix[i],ix[i+1]])}});
+  if(!V.length)return null;
+  let cx=0,cy=0,cz=0;V.forEach(v=>{cx+=v[0];cy+=v[1];cz+=v[2]});cx/=V.length;cy/=V.length;cz/=V.length;
+  let r=0;V.forEach(v=>{v[0]-=cx;v[1]-=cy;v[2]-=cz;r=Math.max(r,Math.hypot(v[0],v[1],v[2]))});V.forEach(v=>{v[0]/=r;v[1]/=r;v[2]/=r});
+  const st=Math.ceil(F.length/5000);return{v:V,f:st>1?F.filter((_,i)=>i%st===0):F};
+}
+const mdlDiv=mk(`<div class='sec'>\ud83d\udce6 3D model (solid, transparent)</div><div class='ln' id='mdg'><button data-mesh='cube'>\ud83e\uddca Cube</button><button data-mesh='pyramid'>\ud83d\udd3a Pyramid</button><button data-mesh='gem'>\ud83d\udc8e Gem</button><button data-mesh='sphere'>\u26aa Sphere</button></div><label class='b row'>\ud83d\udce6 Apna 3D model (.obj) chuno<input id='objf' type='file' accept='.obj' hidden></label><div class='aan'>Rang: Colour 1. .obj file free site se lo (jaise Sketchfab/Free3D se OBJ download).</div>`);
+emoDiv.after(mdlDiv);
+const useMesh=m=>{const s=S[act];s.mesh=m;s.cv.width=QW();s.cv.height=QH();s.des='model';s.txt=null;s.sl=null;s.test=false;s.ds=null;s.vd.pause();s.src=s.cv;apply()};
+$('#mdg').onclick=e=>{const b=e.target.closest('button');if(b)useMesh(MESH[b.dataset.mesh])};
+$('#objf').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;f.text().then(t=>{const m=parseOBJ(t);if(m)useMesh(m);else toast('OBJ file sahi nahi hai')})};
+MROOTS.push(mdlDiv);
+// draw: frames + flipbook + draw-on animation
+D.flip=['\u270f Flipbook',(c,w,h,t,s)=>{c.clearRect(0,0,w,h);if(!s.frs||!s.frs.length)return;c.drawImage(s.frs[Math.floor(t/(1000/(s.fps||6)))%s.frs.length],0,0,w,h)}];
+D.drawon=['\u270d Draw-on',(c,w,h,t,s)=>{
+  c.clearRect(0,0,w,h);const st=s.stk||[];let N=0;st.forEach(q=>N+=q.p.length);if(!N)return;
+  const per=N*22+1500,p=Math.min(1,(t%per)/(N*22));skRender(c,st,w/960,Math.floor(N*p));
+}];
+function skRender(c,st,k,lim){
+  let n=0;c.lineCap='round';c.lineJoin='round';
+  for(const q of st){const P=q.p;if(!P.length)continue;if(lim!=null&&n>=lim)break;
+    c.globalCompositeOperation=q.er?'destination-out':'source-over';c.strokeStyle=q.c;c.lineWidth=q.w*k;c.beginPath();c.moveTo(P[0][0]*k,P[0][1]*k);
+    if(P.length===1)c.lineTo(P[0][0]*k+.1,P[0][1]*k);
+    for(let i=1;i<P.length;i++){if(lim!=null&&n>=lim)break;c.lineTo(P[i][0]*k,P[i][1]*k);n++}
+    c.stroke();}
+  c.globalCompositeOperation='source-over';
+}
+const FRS=[[]];let fi=0,skCur=null;const SK=$('#skc'),skx2=SK.getContext('2d');
+skx2.clearRect(0,0,960,540);
+$('#skx').parentNode.insertAdjacentHTML('beforebegin',`<div class='ln'>Frame <button id='skf1'>\u25c0</button><span id='skfi'>1/1</span><button id='skf2'>\u25b6</button><button id='skfa'>\uff0b</button><button id='skfd'>\ud83d\uddd1</button> FPS <input id='skfps' type='number' value='6' min='1' max='30'> <button id='skun'>\u21b6 Undo</button></div>`);
+$('#sko').textContent='\u2714 Still lagao';
+$('#sko').insertAdjacentHTML('afterend',`<button id='skfl' class='acc'>\u25b6 Flipbook lagao</button><button id='skdo' class='acc'>\u270d Draw-on lagao</button>`);
+function skInfo(){$('#skfi').textContent=(fi+1)+'/'+FRS.length}
+function skRedraw(){
+  skx2.clearRect(0,0,960,540);skRender(skx2,FRS[fi],1);
+  if(fi>0){const t=document.createElement('canvas');t.width=960;t.height=540;const x=t.getContext('2d');x.globalAlpha=.3;const o=document.createElement('canvas');o.width=960;o.height=540;skRender(o.getContext('2d'),FRS[fi-1],1);x.drawImage(o,0,0);SK.style.backgroundImage='url('+t.toDataURL()+')';SK.style.backgroundSize='100% 100%'}else SK.style.backgroundImage='none';
+  skInfo();
+}
+const skPt=e=>{const r=SK.getBoundingClientRect();return[(e.clientX-r.left)/r.width*960,(e.clientY-r.top)/r.height*540]};
+SK.onpointerdown=e=>{SK.setPointerCapture(e.pointerId);const p=skPt(e);skCur={p:[p],c:$('#skcol').value,w:+$('#skw').value,er:$('#ske').checked};FRS[fi].push(skCur);skRender(skx2,[{p:[p],c:skCur.c,w:skCur.w,er:skCur.er}],1)};
+SK.onpointermove=e=>{if(!skCur)return;const p=skPt(e),a=skCur.p[skCur.p.length-1];skCur.p.push(p);skRender(skx2,[{p:[a,p],c:skCur.c,w:skCur.w,er:skCur.er}],1)};
+SK.onpointerup=SK.onpointercancel=()=>{skCur=null};
+$('#skb2').addEventListener('click',skRedraw);
+$('#skx').onclick=()=>{FRS[fi]=[];skRedraw()};
+$('#skun').onclick=()=>{FRS[fi].pop();skRedraw()};
+$('#skf1').onclick=()=>{fi=Math.max(0,fi-1);skRedraw()};
+$('#skf2').onclick=()=>{fi=Math.min(FRS.length-1,fi+1);skRedraw()};
+$('#skfa').onclick=()=>{FRS.splice(fi+1,0,[]);fi++;skRedraw()};
+$('#skfd').onclick=()=>{if(FRS.length>1){FRS.splice(fi,1);fi=Math.min(fi,FRS.length-1)}else FRS[0]=[];skRedraw()};
+const skDone=()=>{$('#sk').classList.add('hide')};
+const skBase=s=>{s.cv.width=QW();s.cv.height=QH();s.txt=null;s.sl=null;s.test=false;s.ds=null;s.vd.pause();s.src=s.cv};
+$('#sko').onclick=()=>{
+  const s=S[act];s.cv.width=1280;s.cv.height=720;const c=s.cv.getContext('2d');c.clearRect(0,0,1280,720);skRender(c,FRS[fi],1280/960);
+  s.des=null;s.txt=s.sl=null;s.test=false;s.vd.pause();s.src=s.cv;apply();skDone();
+};
+$('#skfl').onclick=()=>{
+  const s=S[act];s.frs=FRS.map(f=>{const cv=document.createElement('canvas');cv.width=1280;cv.height=720;skRender(cv.getContext('2d'),f,1280/960);return cv});
+  s.fps=+$('#skfps').value||6;skBase(s);s.des='flip';apply();skDone();toast(FRS.length+' frame ka flipbook lag gaya');
+};
+$('#skdo').onclick=()=>{
+  const s=S[act];s.stk=JSON.parse(JSON.stringify(FRS[fi]));skBase(s);s.des='drawon';apply();skDone();toast('Draw-on animation lag gaya');
+};
 
 let init=null;
 try{const j=JSON.parse(localStorage.getItem('pm_s'));if(Array.isArray(j)&&j.length&&j.every(p=>Array.isArray(p)&&p.length===4))init=j}catch(e){}
