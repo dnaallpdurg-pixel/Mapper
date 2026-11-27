@@ -177,7 +177,7 @@ const save=()=>{try{localStorage.setItem('pm_s',JSON.stringify(S.map(s=>s.pts)))
 
 // undo / redo history
 let hist=[],hi=-1,uid=0;
-const SSK=['name','shape','txt','des','col','col2','em','stk','fps','test','vs','ve','bl','poly','psm','mg','mesh2','neon','lyr','flow','fth','fx','hid','lock','solo'];
+const SSK=['name','shape','txt','des','col','col2','em','stk','fps','test','vs','ve','bl','poly','psm','mg','mesh2','neon','lyr','flow','fth','fx','hid','lock','solo','cs'];
 const sst=s=>{const o={};SSK.forEach(k=>{if(s[k]!==undefined)o[k]=s[k]});if(s.fx){const f=Object.assign({},s.fx);delete f.phase;delete f.t0;o.fx=f}return JSON.stringify(o)};
 const snap=()=>({list:S.map(s=>({s,pts:JSON.parse(JSON.stringify(s.pts)),st:sst(s),sil:s.sil,mesh:s.mesh,frs:s.frs})),act});
 const key=n=>JSON.stringify(n.list.map(o=>[o.s.id,o.pts,o.st]));
@@ -596,7 +596,7 @@ function fxTick(){if(FRZ)return;
     const p=Math.min(1,(now-f.t0)/1000/d),e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
     const q=f.phase==='in'?e:f.phase==='out'?1-e:f.phase==='shown'?1:0;
     const W=s.src.videoWidth||s.src.width,H=s.src.videoHeight||s.src.height;
-    const R={op:1,tf:[],fl:[],cp:''};
+    const R={op:1,tf:[],fl:[],cp:''};{const cz=contentTf(s,W,H);if(cz)R.tf.push(cz)}
     if(f.flipH||f.flipV)R.tf.push(`scale(${f.flipH?-1:1},${f.flipV?-1:1})`);
     CS=s;CF=f;s.ofs=null;if(LP[f.loop])LP[f.loop][1](R,now/1000*f.speed,W,H);
     if(BEAT.on){R.tf.push(`scale(${1+BEAT.v*.1})`);R.fl.push(`brightness(${1+BEAT.v*.5})`)}
@@ -995,13 +995,13 @@ $('#vst').oninput=e=>{S[act].vs=+e.target.value||0};
 $('#ven').oninput=e=>{S[act].ve=+e.target.value||0};
 
 // projects: save / open / new / export / import / auto-save
-const ser=()=>({v:1,seq:{mode:SQ.mode,gap:SQ.gap,loop:SQ.loop},s:S.map(s=>({pts:s.pts,name:s.name,shape:s.shape,sil:s.sil,fx:{...s.fx,phase:'shown'},txt:s.txt,des:s.des,col:s.col,col2:s.col2,test:s.test,flow:s.flow,vs:s.vs,ve:s.ve,fth:s.fth,hf:!!s.fb,mg:s.mg,mesh2:s.mesh2}))});
+const ser=()=>({v:1,seq:{mode:SQ.mode,gap:SQ.gap,loop:SQ.loop},s:S.map(s=>({pts:s.pts,name:s.name,shape:s.shape,sil:s.sil,fx:{...s.fx,phase:'shown'},txt:s.txt,des:s.des,col:s.col,col2:s.col2,test:s.test,flow:s.flow,vs:s.vs,ve:s.ve,fth:s.fth,hf:!!s.fb,mg:s.mg,mesh2:s.mesh2,cs:s.cs}))});
 function loadP(d,px){
   S.forEach(s=>{s.wr.remove();s.pg.remove()});S=[];
   Object.assign(SQ,d.seq||{});
   (d.s&&d.s.length?d.s:[{}]).forEach(v=>{
     add(v.pts);const s=S[S.length-1];
-    Object.assign(s,{name:v.name,shape:v.shape,sil:v.sil,txt:v.txt,des:v.des,col:v.col,col2:v.col2,flow:v.flow,vs:v.vs,ve:v.ve,hf:v.hf,mg:v.mg,mesh2:v.mesh2,test:v.test!==undefined?v.test:true});
+    Object.assign(s,{name:v.name,shape:v.shape,sil:v.sil,txt:v.txt,des:v.des,col:v.col,col2:v.col2,flow:v.flow,vs:v.vs,ve:v.ve,hf:v.hf,mg:v.mg,mesh2:v.mesh2,cs:v.cs,test:v.test!==undefined?v.test:true});
     if(v.fx)s.fx=Object.assign(defFx(),v.fx);setFth(s,v.fth||0);applyCk(s);if(s.mesh2&&s.mg)meshSync(s);
   });
   pick(0);hist=[snap()];hi=0;updU();
@@ -1691,7 +1691,7 @@ function cloneSurface(s,k){
   add(s.pts.map(p=>[Math.min(1,Math.max(0,p[0]+dx)),Math.min(1,Math.max(0,p[1]+dy))]));
   const n=S[S.length-1];
   if(s.name)n.name=s.name+' copy';
-  Object.assign(n,{shape:J(s.shape),sil:s.sil,txt:J(s.txt),des:s.des,col:s.col,col2:s.col2,flow:J(s.flow),em:s.em,mesh:s.mesh,frs:s.frs,fps:s.fps,stk:J(s.stk),test:s.test,vs:s.vs,ve:s.ve,bl:s.bl,poly:J(s.poly),psm:s.psm});
+  Object.assign(n,{shape:J(s.shape),sil:s.sil,txt:J(s.txt),des:s.des,col:s.col,col2:s.col2,flow:J(s.flow),em:s.em,mesh:s.mesh,frs:s.frs,fps:s.fps,stk:J(s.stk),test:s.test,vs:s.vs,ve:s.ve,bl:s.bl,cs:J(s.cs),poly:J(s.poly),psm:s.psm});
   n.fx=Object.assign(defFx(),J(s.fx),{phase:'shown',t0:0});
   setFth(n,s.fth||0);
   if(s.bl)n.wr.style.mixBlendMode='screen';
@@ -1958,7 +1958,7 @@ panel.addEventListener('click',e=>{const h=e.target.closest('.grp>.sec');if(h&&p
 scRender();
 
 // ===== Batch: Layers, Templates, Output flip, Show lock, Freeze, Version, Festival art, Music+Beat, Karaoke, MIDI, Grid snap =====
-var FRZ=false,LOCK=false,OUTF={x:false,y:false},AUON=false;const VER=16;
+var FRZ=false,LOCK=false,OUTF={x:false,y:false},AUON=false;const VER=17;
 document.head.insertAdjacentHTML('beforeend',`<style>.locked #dock>button,.locked #panel,.locked .h,.locked #svg{display:none!important}#lk{display:none}.locked #dock>#lk{display:block!important}</style>`);
 // Layers panel
 const layDiv=mk(`<div class='grp'><div class='sec'>\ud83d\udcda Layers (surfaces ki list)</div><div class='gb'><div id='lyl'></div><div class='aan'>\ud83d\udc41 chhupao \u00b7 \ud83d\udd12 lock \u00b7 \u25ce solo \u00b7 \u2191\u2193 upar-neeche (upar wali upar dikhti hai)</div></div></div>`).firstChild;
@@ -2209,6 +2209,38 @@ function lang(m){const tw=document.createTreeWalker(document.body,NodeFilter.SHO
 pj.insertAdjacentHTML('beforeend',`<div class='sec'>\ud83c\udf10 Bhasha / Language</div><div class='ln'><select id='lng'><option value='0'>Hinglish</option><option value='1'>English</option><option value='2'>\u0939\u093f\u0902\u0926\u0940</option></select></div>`);
 $('#lng').onchange=e=>{lang(+e.target.value);try{localStorage.setItem('pm_lng',e.target.value)}catch(x){}};
 try{const l=localStorage.getItem('pm_lng');if(l&&l!=='0'){$('#lng').value=l;setTimeout(()=>lang(+l),600)}}catch(e){}
+
+// ===== Content ka size / position / fit (clip art, 3D, text, image, video sab ke liye) =====
+function contentTf(s,W,H){
+  const c=s.cs||{},k=c.k||1,x=c.x||0,y=c.y||0;let fit=c.fit||'auto';
+  if(fit==='auto')fit=(s.des==='emoji'||s.des==='model'||s.txt||s.src===s.im||(s.src===s.cv&&!(s.des||s.sl||s.test)))?'fit':'stretch';
+  let sx=1,sy=1;
+  if(fit!=='stretch'&&W&&H){
+    const xs=s.pts.map(p=>p[0]),ys=s.pts.map(p=>p[1]),qa=((Math.max(...xs)-Math.min(...xs))*stage.clientWidth)/Math.max(1,(Math.max(...ys)-Math.min(...ys))*stage.clientHeight),sa=W/H;
+    if(fit==='fit'){if(sa>qa)sy=qa/sa;else sx=sa/qa}else{if(sa>qa)sx=sa/qa;else sy=qa/sa}
+  }
+  if(sx===1&&sy===1&&k===1&&!x&&!y)return'';
+  return`translate(${x*W}px,${y*H}px) scale(${sx*k},${sy*k})`;
+}
+const szDiv=mk(`<div class='sec'>\ud83d\udd0d Size / Position (content ka size)</div><div class='ln'>Size <input id='szk' type='range' min='10' max='300' value='100'> <span id='szv'>100%</span></div><div class='ln'><button id='szm'>\u2212 Chhota</button><button id='szp'>\uff0b Bada</button><button id='szr'>\u21ba Reset</button></div><div class='ln'>Left\u2194Right <input id='szx' type='range' min='-50' max='50' value='0'></div><div class='ln'>Up\u2195Down <input id='szy' type='range' min='-50' max='50' value='0'></div><div class='ln'>Fit <select id='szf'><option value='auto'>Auto</option><option value='fit'>Fit (poora dikhe)</option><option value='fill'>Fill (bhar do)</option><option value='stretch'>Stretch (khinch do)</option></select></div><div class='aan'>Mouse wheel ya do ungli se pinch karo to bhi size badalta hai. Fit: content ka shape bina bigde poora dikhta hai.</div>`);
+tp.cont.prepend(szDiv);szDiv.classList.add('grp');{const b=document.createElement('div');b.className='gb';[...szDiv.children].slice(1).forEach(c=>b.appendChild(c));szDiv.appendChild(b)}
+MROOTS.push(szDiv);
+function szUI(){const s=S[act],c=(s&&s.cs)||{};$('#szk').value=Math.round((c.k||1)*100);$('#szv').textContent=Math.round((c.k||1)*100)+'%';$('#szx').value=Math.round((c.x||0)*100);$('#szy').value=Math.round((c.y||0)*100);$('#szf').value=c.fit||'auto'}
+function szSet(s,k){s.cs=Object.assign({},s.cs,{k:Math.max(.05,Math.min(5,k))});szUI()}
+$('#szk').oninput=e=>szSet(S[act],e.target.value/100);
+$('#szm').onclick=()=>szSet(S[act],((S[act].cs&&S[act].cs.k)||1)/1.15);
+$('#szp').onclick=()=>szSet(S[act],((S[act].cs&&S[act].cs.k)||1)*1.15);
+$('#szr').onclick=()=>{S[act].cs=null;szUI();commit()};
+$('#szx').oninput=e=>{const s=S[act];s.cs=Object.assign({},s.cs,{x:e.target.value/100})};
+$('#szy').oninput=e=>{const s=S[act];s.cs=Object.assign({},s.cs,{y:e.target.value/100})};
+$('#szf').onchange=e=>{const s=S[act];s.cs=Object.assign({},s.cs,{fit:e.target.value});szUI()};
+const _rf7=renderFx;renderFx=()=>{_rf7();szUI()};
+stage.style.touchAction='none';
+stage.addEventListener('wheel',e=>{const s=S[act];if(!s||LOCK||outMode)return;const r=stage.getBoundingClientRect();if(!inQ(s.pts,(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height))return;e.preventDefault();szSet(s,((s.cs&&s.cs.k)||1)*Math.exp(-e.deltaY*.0015))},{passive:false});
+const PP=new Map();let pd0=0,pk0=1;
+stage.addEventListener('pointerdown',e=>{PP.set(e.pointerId,[e.clientX,e.clientY]);if(PP.size===2){const v=[...PP.values()];pd0=Math.hypot(v[0][0]-v[1][0],v[0][1]-v[1][1]);pk0=(S[act].cs&&S[act].cs.k)||1;mv=null}});
+stage.addEventListener('pointermove',e=>{if(!PP.has(e.pointerId))return;PP.set(e.pointerId,[e.clientX,e.clientY]);if(PP.size===2&&pd0>10){const v=[...PP.values()],d=Math.hypot(v[0][0]-v[1][0],v[0][1]-v[1][1]);szSet(S[act],pk0*d/pd0);mv=null}});
+['pointerup','pointercancel'].forEach(ev=>addEventListener(ev,e=>PP.delete(e.pointerId)));
 
 let init=null;
 try{const j=JSON.parse(localStorage.getItem('pm_s'));if(Array.isArray(j)&&j.length&&j.every(p=>Array.isArray(p)&&p.length===4))init=j}catch(e){}
